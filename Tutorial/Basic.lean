@@ -24,9 +24,6 @@ def mat : Matrix (Fin 2) (Fin 2) ℝ :=
 
 variable {a b : Matrix (Fin 2) (Fin 2) ℝ}
 
-
--- variable {ι m n p : Type*} {α R S : Type*}
-
 variable [Fintype m] [Fintype n] [Fintype p]
 
 #check a 0 1
@@ -46,6 +43,13 @@ variable {c d : Matrix (Fin 2) (Fin 5) ℝ}
 #check Matrix.diag
 def try1 {i j : Nat}: aᵀ i j = a j i := by
   simp [transpose]
+variable {v v1 v2 : (Fin 2 → ℝ)}
+
+#check mulVec a v         -- matrix * vector
+#check vecMul v a         -- vector * matrix
+#check dotProduct v1 v2   -- vector * vector
+
+
 
 --!!! definition
 
@@ -60,15 +64,16 @@ def traceMTDotM (n m : Nat) (a b: Matrix (Fin n) (Fin m) ℝ) : ℝ :=
 def is_positive_semidefinite (n : Nat) (A : Matrix (Fin n) (Fin n) ℝ) : Prop
   := ∀ (v : (Fin n → ℝ)), dotProduct v (mulVec A v) ≥ 0
 
-variable {v v1 v2 : (Fin 2 → ℝ)}
-#check mulVec a v
-#check vecMul v a
-#check dotProduct v1 v2
 
+
+
+-- !!! theorem
 
 -- trace (A * B) = trace (B * A)
 #check trace_mul_comm
 
+-- ∑ i in Fin n, ∑ j in Fin m, p i j
+--      = ∑ j in Fin m, ∑ i in Fin n, p i j
 #check Finset.sum_comm
 
 -- ⟨a, b⟩ = trace (aᵀ * b)
@@ -80,7 +85,7 @@ theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
     simp [dotProduct]
     exact Finset.sum_comm
 
-
+-- (aᵀ b)ᵢᵢ = ∑ j, (aᵢⱼ) * (bᵢⱼ)
 private theorem MTDotM (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
   ((∀ i : Fin m,
     (aᵀ * b).diag i =
@@ -99,7 +104,7 @@ theorem diagPosMTDotM (n m : Nat) (a : Matrix (Fin n) (Fin m) ℝ) :
     intro x
     rw [MTDotM]
     apply Finset.sum_nonneg
-    intro i _
+    intro _ _
     rw [← pow_two]
     apply pow_two_nonneg
 
@@ -112,4 +117,23 @@ theorem matrix_decomposition (n : Nat) (a : Matrix (Fin n) (Fin n) ℝ ) :
 theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
   is_positive_semidefinite n a → is_positive_semidefinite n b →
     0 ≤ innerProductofMatrix n n a b := by
-  sorry
+  intro ha hb
+  rcases ((matrix_decomposition n a) ha) with ⟨a1, ha1⟩
+  rcases ((matrix_decomposition n b) hb) with ⟨b1, hb1⟩
+  -- a1: Matrix (Fin n) (Fin n) ℝ
+  -- ha1: a = a1ᵀ * a1
+  -- b1: Matrix (Fin n) (Fin n) ℝ
+  -- hb1: b = b1ᵀ * b1
+  rw [ha1, hb1, iProd_eq_traceDot]
+  simp [traceMTDotM]
+  rw [mul_assoc]
+  rw [trace_mul_comm]
+  rw [← mul_assoc, mul_assoc]
+  let c := b1 * a1ᵀ
+  have hc : 0 ≤ trace (cᵀ * c) := by
+    rw [trace]
+    apply Finset.sum_nonneg
+    intro _ _
+    apply diagPosMTDotM
+  simp at hc
+  exact hc
