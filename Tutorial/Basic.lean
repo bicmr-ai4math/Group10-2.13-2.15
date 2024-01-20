@@ -8,6 +8,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Algebra.BigOperators.Basic
 import Mathlib.Data.Fin.Tuple.Reflection
+import Mathlib.LinearAlgebra.Matrix.PosDef
 
 open BigOperators
 open Finset
@@ -57,12 +58,13 @@ variable {v v1 v2 : (Fin 2 → ℝ)}
 def innerProductofMatrix (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) : ℝ :=
   ∑ i : Fin n, ∑ j : Fin m, (a i j) * (b i j)
 
--- traceMTDotM a b -- is defined as -- trace (aᵀ * b)
-def traceMTDotM (n m : Nat) (a b: Matrix (Fin n) (Fin m) ℝ) : ℝ :=
-  trace (aᵀ * b)
+-- traceMHDotM a b -- is defined as -- trace (aᴴ * b)
+def traceMHDotM (n m : Nat) (a b: Matrix (Fin n) (Fin m) ℝ) : ℝ :=
+  trace (aᴴ * b)
 
-def is_positive_semidefinite (n : Nat) (A : Matrix (Fin n) (Fin n) ℝ) : Prop
-  := ∀ (v : (Fin n → ℝ)), dotProduct v (mulVec A v) ≥ 0
+#check PosSemidef -- is defined as -- A is symmetry ∀ v, dotProduct v (mulVec A v) ≥ 0
+-- def is_positive_semidefinite (n : Nat) (A : Matrix (Fin n) (Fin n) ℝ) : Prop
+--   := ∀ (v : (Fin n → ℝ)), dotProduct v (mulVec A v) ≥ 0
 
 
 
@@ -76,19 +78,19 @@ def is_positive_semidefinite (n : Nat) (A : Matrix (Fin n) (Fin n) ℝ) : Prop
 --      = ∑ j in Fin m, ∑ i in Fin n, p i j
 #check Finset.sum_comm
 
--- ⟨a, b⟩ = trace (aᵀ * b)
+-- ⟨a, b⟩ = trace (aᴴ * b)
 theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
-  innerProductofMatrix n m a b = traceMTDotM n m a b := by
-    rw [innerProductofMatrix, traceMTDotM]
+  innerProductofMatrix n m a b = traceMHDotM n m a b := by
+    rw [innerProductofMatrix, traceMHDotM]
     rw [← mulᵣ_eq, mulᵣ]
     rw [trace]
     simp [dotProduct]
     exact Finset.sum_comm
 
--- (aᵀ b)ᵢᵢ = ∑ j, (aᵢⱼ) * (bᵢⱼ)
-private theorem MTDotM (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
+-- (aᴴ b)ᵢᵢ = ∑ j, (aᵢⱼ) * (bᵢⱼ)
+private theorem MHDotM (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
   ((∀ i : Fin m,
-    (aᵀ * b).diag i =
+    (aᴴ * b).diag i =
     ∑ j : Fin n, (a j i) * (b j i))) := by
     intro id
     rw [Matrix.diag]
@@ -98,42 +100,43 @@ private theorem MTDotM (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
 
 #check Matrix.mulᵣ a b
 
--- [aᵀ * a]_ii >= 0
-theorem diagPosMTDotM (n m : Nat) (a : Matrix (Fin n) (Fin m) ℝ) :
-  ∀ i, 0 ≤ (aᵀ * a).diag i := by
+-- [aᴴ * a]ᵢᵢ ≥ 0
+theorem diagPosMHDotM (n m : Nat) (a : Matrix (Fin n) (Fin m) ℝ) :
+  ∀ i, 0 ≤ (aᴴ * a).diag i := by
     intro x
-    rw [MTDotM]
+    rw [MHDotM]
     apply Finset.sum_nonneg
     intro _ _
     rw [← pow_two]
     apply pow_two_nonneg
 
--- a matrix can be decomposed into a product of a matrix and its transpose
-theorem matrix_decomposition (n : Nat) (a : Matrix (Fin n) (Fin n) ℝ ) :
-  is_positive_semidefinite n a → ∃ b : Matrix (Fin n) (Fin n) ℝ, a = bᵀ * b := by
-  sorry
+
+#check posSemidef_iff_eq_transpose_mul_self.mp
 
 
 theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
-  is_positive_semidefinite n a → is_positive_semidefinite n b →
+  PosSemidef a → PosSemidef b →
     0 ≤ innerProductofMatrix n n a b := by
   intro ha hb
-  rcases ((matrix_decomposition n a) ha) with ⟨a1, ha1⟩
-  rcases ((matrix_decomposition n b) hb) with ⟨b1, hb1⟩
+  rcases (posSemidef_iff_eq_transpose_mul_self.mp ha) with ⟨a1, ha1⟩
+  rcases (posSemidef_iff_eq_transpose_mul_self.mp hb) with ⟨b1, hb1⟩
   -- a1: Matrix (Fin n) (Fin n) ℝ
-  -- ha1: a = a1ᵀ * a1
+  -- ha1: a = a1ᴴ * a1
   -- b1: Matrix (Fin n) (Fin n) ℝ
-  -- hb1: b = b1ᵀ * b1
+  -- hb1: b = b1ᴴ * b1
   rw [ha1, hb1, iProd_eq_traceDot]
-  simp [traceMTDotM]
+  simp [traceMHDotM]
+  rw [transpose_mul]
+  simp
   rw [mul_assoc]
   rw [trace_mul_comm]
-  rw [← mul_assoc, mul_assoc]
+  rw [← mul_assoc]
+  rw [mul_assoc]
   let c := b1 * a1ᵀ
   have hc : 0 ≤ trace (cᵀ * c) := by
     rw [trace]
     apply Finset.sum_nonneg
     intro _ _
-    apply diagPosMTDotM
+    apply diagPosMHDotM
   simp at hc
   exact hc
