@@ -30,7 +30,7 @@ open BigOperators
 open Finset
 open Matrix
 
-def innerProductofMatrix (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) : ℝ :=
+def innerProductofMatrix {n m : Nat} (a b : Matrix (Fin n) (Fin m) ℝ) : ℝ :=
   ∑ i : Fin n, ∑ j : Fin m, (a i j) * (b i j)
 
 #check Matrix.topologicalRing
@@ -44,7 +44,7 @@ def traceMHDotM (n m : Nat) (a b: Matrix (Fin n) (Fin m) ℝ) : ℝ :=
 
 -- ⟨a, b⟩ = trace (aᴴ * b)
 theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
-  innerProductofMatrix n m a b = traceMHDotM n m a b := by
+  innerProductofMatrix a b = traceMHDotM n m a b := by
     rw [innerProductofMatrix, traceMHDotM]
     rw [← mulᵣ_eq, mulᵣ]
     rw [trace]
@@ -68,7 +68,7 @@ theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
 def HasGateauxDerivAt (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (f' : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∀ V : Matrix (Fin m) (Fin n) ℝ,
     Filter.Tendsto (fun t : ℝ ↦ (f (X + t • V) - f X ) / t)
-      (𝓝[≠] 0) (𝓝 (innerProductofMatrix m n f' V))
+      (𝓝[≠] 0) (𝓝 (innerProductofMatrix f' V))
 
 -- define f is G differentiable
 def GateauxDifferentiable (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) : Prop :=
@@ -90,6 +90,20 @@ lemma GateauxDeriv_spec (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X :
 def f_aXb  (a : Fin m → ℝ) (b : Fin n → ℝ): Matrix (Fin m) (Fin n) ℝ → ℝ :=
   fun X => dotProduct a (mulVec X b)
 
+lemma f_aXb_eq (a : Fin m → ℝ) (b : Fin n → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) :
+  f_aXb a b X = innerProductofMatrix (vecMulVec a b) X := by
+    simp [f_aXb, innerProductofMatrix, dotProduct, vecMulVec]
+    dsimp [mulVec, dotProduct]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [mul_sum]
+    apply Finset.sum_congr rfl
+    intro j _
+    ring
+
+
+
+
 theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
   (h : ∃ f', HasGateauxDerivAt m n (f_aXb a b) X f'):
   GateauxDeriv m n (f_aXb a b) X h = vecMulVec a b :=
@@ -99,7 +113,7 @@ theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin 
     simp [Matrix.smul_mulVec_assoc] at h
     simp [← div_mul_eq_mul_div] at h
     replace h : ∃ f', ∀ (V : Matrix (Fin m) (Fin n) ℝ),
-        Tendsto (fun t : ℝ => a ⬝ᵥ mulVec V b) (𝓝[≠] 0) (𝓝 (innerProductofMatrix m n f' V)) := by
+        Tendsto (fun t : ℝ => a ⬝ᵥ mulVec V b) (𝓝[≠] 0) (𝓝 (innerProductofMatrix f' V)) := by
       convert h using 3
       apply tendsto_congr'
       apply eventuallyEq_nhdsWithin_of_eqOn
@@ -114,7 +128,35 @@ theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin 
         apply sum_eq_zero
         intro _ _
         ring
+    let ⟨ f, cond ⟩ := h
+    have _ : f = vecMulVec a b := by
+      sorry
     sorry
+
+theorem problem_a' (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
+  : HasGateauxDerivAt m n (f_aXb a b) X (vecMulVec a b) := by
+    simp [HasGateauxDerivAt]
+    simp [Matrix.add_mulVec]
+    simp [Matrix.smul_mulVec_assoc]
+    simp [← div_mul_eq_mul_div]
+    intro V
+    have : innerProductofMatrix (vecMulVec a b) V = a ⬝ᵥ mulVec V b := by
+      rw [<- f_aXb]
+      apply Eq.symm
+      apply f_aXb_eq
+    rw [this]
+    have : (fun t => t / t * a ⬝ᵥ mulVec V b) =ᶠ[𝓝[≠] 0] (fun _ => a ⬝ᵥ mulVec V b) := by
+      apply eventuallyEq_nhdsWithin_of_eqOn
+      intro x h
+      simp
+      rw [div_self (h), one_mul]
+    apply (tendsto_congr' this).mpr
+    apply tendsto_const_nhds
+
+
+
+
+
 
 -- 2.13(b)
 @[simp]
