@@ -75,32 +75,61 @@ def GateauxDifferentiable (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X
   ∃ G : Matrix (Fin m) (Fin n) ℝ, HasGateauxDerivAt m n f X G
 
 -- take the derivative of the function which is differentiable
-noncomputable section
-def GateauxDeriv (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
-  (h : ∃ f', HasGateauxDerivAt m n f X f')
-  : Matrix (Fin m) (Fin n) ℝ :=
+noncomputable
+irreducible_def GateauxDeriv (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
+    (h : ∃ f', HasGateauxDerivAt m n f X f') : Matrix (Fin m) (Fin n) ℝ :=
   Classical.choose h
 
+lemma GateauxDeriv_spec (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
+    (h : ∃ f', HasGateauxDerivAt m n f X f') : HasGateauxDerivAt m n f X (GateauxDeriv m n f X h) := by
+  rw [GateauxDeriv_def]
+  exact Classical.choose_spec h
+
 -- 2.13(a)
+@[simp]
 def f_aXb  (a : Fin m → ℝ) (b : Fin n → ℝ): Matrix (Fin m) (Fin n) ℝ → ℝ :=
   fun X => dotProduct a (mulVec X b)
 
 theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
   (h : ∃ f', HasGateauxDerivAt m n (f_aXb a b) X f'):
   GateauxDeriv m n (f_aXb a b) X h = vecMulVec a b :=
-  sorry
+  by
+    simp [HasGateauxDerivAt] at h
+    simp [Matrix.add_mulVec] at h
+    simp [Matrix.smul_mulVec_assoc] at h
+    simp [← div_mul_eq_mul_div] at h
+    replace h : ∃ f', ∀ (V : Matrix (Fin m) (Fin n) ℝ),
+        Tendsto (fun t : ℝ => a ⬝ᵥ mulVec V b) (𝓝[≠] 0) (𝓝 (innerProductofMatrix m n f' V)) := by
+      convert h using 3
+      apply tendsto_congr'
+      apply eventuallyEq_nhdsWithin_of_eqOn
+      intro x hx
+      dsimp
+      rw [div_self (Set.mem_compl hx), one_mul]
+    have hh : ∀ p q : Fin m → ℝ, dotProduct p q = trace (vecMulVec q p) :=
+      by
+        intro p q
+        simp [dotProduct, vecMulVec, trace]
+        rw [← sub_eq_zero, ← sum_sub_distrib]
+        apply sum_eq_zero
+        intro _ _
+        ring
+    sorry
 
 -- 2.13(b)
+@[simp]
 def f_XAX (A : Matrix (Fin m) (Fin m) ℝ) : Matrix (Fin m) (Fin n) ℝ → ℝ :=
   fun X => trace (Xᵀ * A * X)
 
 theorem problem_b (A : Matrix (Fin m) (Fin m) ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
   (h : ∃ f', HasGateauxDerivAt m n (f_XAX A) X f'):
   GateauxDeriv m n (f_XAX A) X h = (A + Aᵀ) * X  :=
-  sorry
+  by
+    sorry
 
 
 -- 2.13(c)
+noncomputable
 def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
 
