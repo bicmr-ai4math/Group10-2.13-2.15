@@ -61,8 +61,7 @@ def Orthogonal_Matrix (n : Nat) (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
 
 -- schur decomposition theorem
 theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
-  ∃ Orthogonal_Matrix n U ,is_upper_triangle n R,
-  A = Uᵀ * R * U := by
+  ∃ U R, Orthogonal_Matrix n U ∧ is_upper_triangle n R ∧ A = Uᵀ * R * U := by
   sorry
 
 -- define f' is f's G derivative
