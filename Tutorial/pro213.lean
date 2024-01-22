@@ -244,3 +244,4 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
 #check IsUnit
 
 #check Finset
+123
