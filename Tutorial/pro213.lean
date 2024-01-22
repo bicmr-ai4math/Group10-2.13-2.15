@@ -10,6 +10,7 @@ import Mathlib.Order.Filter.Basic
 import Mathlib.Topology.Basic
 import Mathlib.Topology.Instances.Matrix
 
+import «Tutorial».Basic
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Real.Basic
@@ -30,17 +31,15 @@ open BigOperators
 open Finset
 open Matrix
 
-def innerProductofMatrix {n m : Nat} (a b : Matrix (Fin n) (Fin m) ℝ) : ℝ :=
-  ∑ i : Fin n, ∑ j : Fin m, (a i j) * (b i j)
+structure Matrix' (m n : Type u) (α : Type v) [Fintype m] [Fintype n] where
+  entries : m → n → α
+
+namespace Matrix'
 
 #check Matrix.topologicalRing
 variable {x }
 #check 𝓝 x
 #check ℝ
-
--- traceMHDotM a b -- is defined as -- trace (aᴴ * b)
-def traceMHDotM (n m : Nat) (a b: Matrix (Fin n) (Fin m) ℝ) : ℝ :=
-  trace (aᴴ * b)
 
 -- ⟨a, b⟩ = trace (aᴴ * b)
 theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
@@ -50,6 +49,33 @@ theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
     rw [trace]
     simp [dotProduct]
     exact Finset.sum_comm
+
+open InnerProductOfMatrix
+theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
+  PosSemidef a → PosSemidef b →
+    0 ≤ ⟪a, b⟫_ℝ  := by
+  intro ha hb
+  rcases (posSemidef_iff_eq_transpose_mul_self.mp ha) with ⟨a1, ha1⟩
+  rcases (posSemidef_iff_eq_transpose_mul_self.mp hb) with ⟨b1, hb1⟩
+  -- a1: Matrix (Fin n) (Fin n) ℝ
+  -- ha1: a = a1ᴴ * a1
+  -- b1: Matrix (Fin n) (Fin n) ℝ
+  -- hb1: b = b1ᴴ * b1
+  rw [ha1, hb1]
+  rw [<-trace_form_of_inner_product]
+  simp [traceMHDotM]
+  rw [transpose_mul]
+  simp
+  rw [mul_assoc]
+  rw [trace_mul_comm]
+  rw [← mul_assoc]
+  rw [mul_assoc]
+  let c := b1 * a1ᵀ
+  have hc : 0 ≤ trace (cᵀ * c) := by
+    rw [trace_form_of_inner_product]
+    exact inner_self_nonneg
+  simp at hc
+  exact hc
 
 -- define of upper triangle matrix
 def is_upper_triangle (n : Nat) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
@@ -64,27 +90,7 @@ theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
   ∃ U R, Orthogonal_Matrix n U ∧ is_upper_triangle n R ∧ A = Uᵀ * R * U := by
   sorry
 
--- define f' is f's G derivative
-def HasGateauxDerivAt (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (f' : Matrix (Fin m) (Fin n) ℝ) : Prop :=
-  ∀ V : Matrix (Fin m) (Fin n) ℝ,
-    Filter.Tendsto (fun t : ℝ ↦ (f (X + t • V) - f X ) / t)
-      (𝓝[≠] 0) (𝓝 (innerProductofMatrix f' V))
-
--- define f is G differentiable
-def GateauxDifferentiable (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) : Prop :=
-  ∃ G : Matrix (Fin m) (Fin n) ℝ, HasGateauxDerivAt m n f X G
-
--- take the derivative of the function which is differentiable
-noncomputable
-irreducible_def GateauxDeriv (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
-    (h : ∃ f', HasGateauxDerivAt m n f X f') : Matrix (Fin m) (Fin n) ℝ :=
-  Classical.choose h
-
-lemma GateauxDeriv_spec (m n: Nat) (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
-    (h : ∃ f', HasGateauxDerivAt m n f X f') : HasGateauxDerivAt m n f X (GateauxDeriv m n f X h) := by
-  rw [GateauxDeriv_def]
-  exact Classical.choose_spec h
-
+open GateauxDeriv
 -- 2.13(a)
 @[simp]
 def f_aXb  (a : Fin m → ℝ) (b : Fin n → ℝ): Matrix (Fin m) (Fin n) ℝ → ℝ :=
@@ -106,7 +112,7 @@ lemma f_aXb_eq (a : Fin m → ℝ) (b : Fin n → ℝ) (X : Matrix (Fin m) (Fin 
 -- 主要困难在于需要用开集的条件规约出tendsTo 内部的 t != 0，
 -- 这里通过用 eventuallyEq_nhdsWithin_of_eqOn 证明引理引导 apply tendsto_congr' 自动匹配解决
 theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
-  : HasGateauxDerivAt m n (f_aXb a b) X (vecMulVec a b) := by
+  : HasGateauxDerivAt (f_aXb a b) X (vecMulVec a b) := by
     simp [HasGateauxDerivAt]
     simp [Matrix.add_mulVec]
     simp [Matrix.smul_mulVec_assoc]
@@ -136,8 +142,8 @@ def f_XAX (A : Matrix (Fin m) (Fin m) ℝ) : Matrix (Fin m) (Fin n) ℝ → ℝ 
   fun X => trace (Xᵀ * A * X)
 
 theorem problem_b (A : Matrix (Fin m) (Fin m) ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
-  (h : ∃ f', HasGateauxDerivAt m n (f_XAX A) X f'):
-  GateauxDeriv m n (f_XAX A) X h = (A + Aᵀ) * X  :=
+  (h : ∃ f', HasGateauxDerivAt (f_XAX A) X f'):
+  GateauxDeriv (f_XAX A) X h = (A + Aᵀ) * X  :=
   by
     sorry
 
@@ -148,6 +154,6 @@ def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
 
 theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ)
-  (h : ∃ f', HasGateauxDerivAt n n (f_lndet) X f'):
-  GateauxDeriv n n (f_lndet) X h = (X⁻¹)ᵀ  :=
+  (h : ∃ f', HasGateauxDerivAt (f_lndet) X f'):
+  GateauxDeriv (f_lndet) X h = (X⁻¹)ᵀ  :=
   sorry
