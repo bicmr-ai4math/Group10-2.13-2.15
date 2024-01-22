@@ -102,41 +102,10 @@ lemma f_aXb_eq (a : Fin m → ℝ) (b : Fin n → ℝ) (X : Matrix (Fin m) (Fin 
     ring
 
 
-
-
-theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
-  (h : ∃ f', HasGateauxDerivAt m n (f_aXb a b) X f'):
-  GateauxDeriv m n (f_aXb a b) X h = vecMulVec a b :=
-  by
-    simp [HasGateauxDerivAt] at h
-    simp [Matrix.add_mulVec] at h
-    simp [Matrix.smul_mulVec_assoc] at h
-    simp [← div_mul_eq_mul_div] at h
-    replace h : ∃ f', ∀ (V : Matrix (Fin m) (Fin n) ℝ),
-        Tendsto (fun t : ℝ => a ⬝ᵥ mulVec V b) (𝓝[≠] 0) (𝓝 (innerProductofMatrix f' V)) := by
-      convert h using 3
-      apply tendsto_congr'
-      apply eventuallyEq_nhdsWithin_of_eqOn
-      intro x hx
-      dsimp
-      rw [div_self (Set.mem_compl hx), one_mul]
-    have hh : ∀ p q : Fin m → ℝ, dotProduct p q = trace (vecMulVec q p) :=
-      by
-        intro p q
-        simp [dotProduct, vecMulVec, trace]
-        rw [← sub_eq_zero, ← sum_sub_distrib]
-        apply sum_eq_zero
-        intro _ _
-        ring
-    let ⟨ f, cond ⟩ := h
-    have _ : f = vecMulVec a b := by
-      sorry
-    sorry
-
 -- 计算 a^T Xb 的导数，大致思路为容易验证导数 D 应当满足 D . V = a^T V b，取 D = a^T b ，分别验证两个等式即可
 -- 主要困难在于需要用开集的条件规约出tendsTo 内部的 t != 0，
 -- 这里通过用 eventuallyEq_nhdsWithin_of_eqOn 证明引理引导 apply tendsto_congr' 自动匹配解决
-theorem problem_a' (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
+theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin n → ℝ)
   : HasGateauxDerivAt m n (f_aXb a b) X (vecMulVec a b) := by
     simp [HasGateauxDerivAt]
     simp [Matrix.add_mulVec]
