@@ -64,6 +64,15 @@ def innerProductofMatrix {n m : Nat} (a b : Matrix (Fin n) (Fin m) ℝ) : ℝ :=
 def traceMHDotM (n m : Nat) (a b: Matrix (Fin n) (Fin m) ℝ) : ℝ :=
   trace (aᴴ * b)
 
+-- ⟨a, b⟩ = trace (aᴴ * b)
+theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
+  innerProductofMatrix a b = traceMHDotM n m a b := by
+    rw [innerProductofMatrix, traceMHDotM]
+    rw [← mulᵣ_eq, mulᵣ]
+    rw [trace]
+    simp [dotProduct]
+    exact Finset.sum_comm
+
 namespace GateauxDeriv
 
 -- define f' is f's G derivative.
