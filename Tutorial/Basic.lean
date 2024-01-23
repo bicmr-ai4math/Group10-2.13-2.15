@@ -216,7 +216,6 @@ theorem trace_form_of_inner_product {n m : â„•} (a b : Matrix (Fin n) (Fin m) â„
   simp [eq_of_pointwise_inner_product_and_trace_inner_product]
   rfl
 
-
 end InnerProductOfMatrix
 
 

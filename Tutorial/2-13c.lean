@@ -3,6 +3,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
 
 open Matrix GateauxDeriv
+open InnerProductOfMatrix
 noncomputable
 def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
@@ -69,9 +70,30 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
     simp only [dist]
     intro ε
     intro ε₁
-    sorry
-
-    -- rw [Real.log_prod]
-    have ha1: trace (R) = innerProductofMatrix (X⁻¹)ᵀ V :=by
+    use 2
+    constructor
+    · linarith
+    · intro x
+      intro x_nonneg x_range
+      rw [Real.log_prod]
+      have inv_1: Q * Qᵀ  = 1 :=by
+        rw [Orthogonal_inv] -- 可以直接利用symm h4
+        assumption
+      have ha1: trace (R) = innerProductofMatrix (X⁻¹)ᵀ V  := by
+        calc
+          trace (R) = trace (R * Q * Qᵀ ) :=by
+            rw [Matrix.mul_assoc]
+            rw [inv_1]
+            simp [Matrix.mul_one]
+          _ = trace (Qᵀ * R * Q) :=by
+            rw [Matrix.trace_mul_cycle]
+          _ = trace (X⁻¹ * V) :=by
+            simp [h3c]
+          _ = trace ( ((X⁻¹)ᵀ)ᵀ  * V) :=by
+            simp [Matrix.transpose_transpose]
+          _ = innerProductofMatrix (X⁻¹)ᵀ V := by
+            simp only [traceMHDotM, iProd_eq_traceDot]
+            simp
       sorry
-    sorry
+
+-- 现在我们只需要证明 Σ log ( 1 + t * r i i) / t = Tr(R) + o(1)
