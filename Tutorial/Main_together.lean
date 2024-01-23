@@ -17,6 +17,8 @@ import Mathlib.Data.Real.Basic
 import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Algebra.BigOperators.Basic
 import Mathlib.Data.Fin.Tuple.Reflection
+import Mathlib.Analysis.SpecialFunctions.Exp
+import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.Adjugate
 import Mathlib.LinearAlgebra.FiniteDimensional
@@ -42,15 +44,6 @@ namespace Matrix'
 variable {x }
 #check 𝓝 x
 #check ℝ
-
--- ⟨a, b⟩ = trace (aᴴ * b)
-theorem iProd_eq_traceDot (n m : Nat) (a b : Matrix (Fin n) (Fin m) ℝ) :
-  innerProductofMatrix a b = traceMHDotM n m a b := by
-    rw [innerProductofMatrix, traceMHDotM]
-    rw [← mulᵣ_eq, mulᵣ]
-    rw [trace]
-    simp [dotProduct]
-    exact Finset.sum_comm
 
 open InnerProductOfMatrix
 theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
@@ -79,7 +72,6 @@ theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
   simp at hc
   exact hc
 
-
 -- define of upper triangle matrix
 def is_upper_triangle {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   Matrix.BlockTriangular A id
@@ -92,7 +84,7 @@ theorem is_upper_triangle.smul {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} {c : �
 
 theorem is_upper_triangle.add {n : Nat} {A B : Matrix (Fin n) (Fin n) ℝ}
     (hA : is_upper_triangle A) (hB : is_upper_triangle B): is_upper_triangle (A + B) := by
-  simp [is_upper_triangle] at *
+  simp [is_upper_triangle] at *   -- *为将所有的标记都化简
   exact Matrix.BlockTriangular.add hA hB
 
 theorem is_upper_triangle.one {n : Nat} : is_upper_triangle (1 : Matrix (Fin n) (Fin n) ℝ) := by
@@ -110,12 +102,16 @@ theorem upper_triangle_det {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} (h : is_up
 def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
+
 -- schur decomposition theorem
 theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
   ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by
   sorry
 
-
+theorem Orthogonal_inv {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ):
+  Orthogonal_Matrix A → A * Aᵀ= 1 := by
+  intro h
+  sorry
 open GateauxDeriv
 -- 2.13(a)
 @[simp]
@@ -132,7 +128,6 @@ lemma f_aXb_eq (a : Fin m → ℝ) (b : Fin n → ℝ) (X : Matrix (Fin m) (Fin 
     apply Finset.sum_congr rfl
     intro j _
     ring
-
 
 -- 计算 a^T Xb 的导数，大致思路为容易验证导数 D 应当满足 D . V = a^T V b，取 D = a^T b ，分别验证两个等式即可
 -- 主要困难在于需要用开集的条件规约出tendsTo 内部的 t != 0，
@@ -157,11 +152,6 @@ theorem problem_a (a : Fin m → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (b : Fin 
     apply (tendsto_congr' this).mpr
     apply tendsto_const_nhds
 
-
-
-
-
-
 -- 2.13(b)
 @[simp]
 def f_XAX (A : Matrix (Fin m) (Fin m) ℝ) : Matrix (Fin m) (Fin n) ℝ → ℝ :=
@@ -172,7 +162,6 @@ theorem problem_b (A : Matrix (Fin m) (Fin m) ℝ) (X : Matrix (Fin m) (Fin n) �
   GateauxDeriv (f_XAX A) X h = (A + Aᵀ) * X  :=
   by
     sorry
-
 
 -- 2.13(c)
 noncomputable
@@ -224,7 +213,7 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
     simp only [← Matrix.mul_add]
     simp
     have : 1 = Q.det * Q.det := by
-      have hh := congrArg Matrix.det h4
+      have hh := congrArg Matrix.det h4 -- 将此性质引入到“假设”中
       simp at hh
       assumption
     simp only [mul_comm]
@@ -238,10 +227,10 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
     simp only [upper_triangle_det, h8]
     have h9 (x : ℝ) (i : Fin n): (1 + x • R) i i ≠ 0 := by
       sorry
-    sorry
-
-#check Matrix.one_mul
-#check IsUnit
-
-#check Finset
-123
+    simp only [dist]
+    rw [Real.log_prod]
+    have ha1: trace (R) = innerProductofMatrix (X⁻¹)ᵀ V :=by
+      calc
+        trace (R) = trace (R * Q * Qᵀ ) :=by
+          rw [symm h4]
+      sorry
