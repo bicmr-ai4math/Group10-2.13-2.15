@@ -8,7 +8,7 @@ import Mathlib.Order.Filter.Basic
 import Mathlib.Topology.Basic
 -- import Mathlib.Topology.Instances.Matrix
 -- import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
--- import Mathlib.Analysis.SpecialFunctions.Exp
+import Mathlib.Analysis.SpecialFunctions.Log
 -- import Mathlib.Data.Nat.Factorization.Basic
 -- import Mathlib.LinearAlgebra.Matrix.PosDef
 -- import Mathlib.LinearAlgebra.Matrix.Adjugate
