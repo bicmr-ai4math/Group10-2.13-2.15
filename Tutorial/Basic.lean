@@ -1,40 +1,20 @@
-import Mathlib.Data.Matrix.Notation
 import Mathlib.Data.Matrix.Basic
-import Mathlib.Data.Matrix.Block
-import Mathlib.Data.Matrix.RowCol
 import Mathlib.Data.Matrix.Reflection
-import Mathlib.Data.Nat.Basic
-import Mathlib.Data.Real.Basic
 import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Algebra.BigOperators.Basic
-import Mathlib.Data.Fin.Tuple.Reflection
-import Mathlib.Data.Matrix.Basic
-import Mathlib.Data.Matrix.Notation
-import Mathlib.Data.Matrix.Block
-import Mathlib.Data.Matrix.RowCol
-import Mathlib.Analysis.Calculus.FDeriv.Basic
+-- import Mathlib.Data.Fin.Tuple.Reflection
+-- import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Order.Filter.Basic
 import Mathlib.Topology.Basic
-import Mathlib.Topology.Instances.Matrix
-import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
-import Mathlib.Data.Nat.Basic
-import Mathlib.Data.Real.Basic
-import Mathlib.LinearAlgebra.Matrix.Trace
-import Mathlib.Algebra.BigOperators.Basic
-import Mathlib.Data.Fin.Tuple.Reflection
-import Mathlib.Analysis.SpecialFunctions.Exp
-import Mathlib.Data.Nat.Factorization.Basic
-import Mathlib.LinearAlgebra.Matrix.PosDef
-import Mathlib.LinearAlgebra.Matrix.Adjugate
-import Mathlib.LinearAlgebra.FiniteDimensional
+-- import Mathlib.Topology.Instances.Matrix
+-- import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+-- import Mathlib.Analysis.SpecialFunctions.Exp
+-- import Mathlib.Data.Nat.Factorization.Basic
+-- import Mathlib.LinearAlgebra.Matrix.PosDef
+-- import Mathlib.LinearAlgebra.Matrix.Adjugate
+-- import Mathlib.LinearAlgebra.FiniteDimensional
 import Mathlib.LinearAlgebra.Matrix.Block
-import Mathlib.LinearAlgebra.Matrix.PosDef
-import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Order.Filter.Basic
-import Mathlib.Topology.Basic
-import Mathlib.Topology.Instances.Matrix
 open BigOperators
 open Finset
 open Matrix Filter Set Topology
