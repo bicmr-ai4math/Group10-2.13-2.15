@@ -35,15 +35,6 @@ open BigOperators
 open Finset
 open Matrix
 
-structure Matrix' (m n : Type u) (α : Type v) [Fintype m] [Fintype n] where
-  entries : m → n → α
-
-namespace Matrix'
-
-#check Matrix.topologicalRing
-variable {x }
-#check 𝓝 x
-#check ℝ
 
 open InnerProductOfMatrix
 theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
@@ -72,62 +63,10 @@ theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
   simp at hc
   exact hc
 
--- define of upper triangle matrix
-def is_upper_triangle {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
-  Matrix.BlockTriangular A id
-
-theorem is_upper_triangle.smul {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} {c : ℝ}
-  (hA : is_upper_triangle A) : is_upper_triangle (c • A) := by
-    simp [is_upper_triangle, BlockTriangular] at *
-    intro _ _ hij
-    exact Or.inr (hA hij)
-
-theorem is_upper_triangle.add {n : Nat} {A B : Matrix (Fin n) (Fin n) ℝ}
-    (hA : is_upper_triangle A) (hB : is_upper_triangle B): is_upper_triangle (A + B) := by
-  simp [is_upper_triangle] at *   -- *为将所有的标记都化简
-  exact Matrix.BlockTriangular.add hA hB
-
-theorem is_upper_triangle.one {n : Nat} : is_upper_triangle (1 : Matrix (Fin n) (Fin n) ℝ) := by
-  simp [is_upper_triangle]
-  exact Matrix.blockTriangular_one
-
-theorem upper_triangle_det {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} (h : is_upper_triangle A) :
-  det A = ∏ i : Fin n, A i i := by
-  simp [is_upper_triangle] at h
-  exact (Matrix.det_of_upperTriangular h)
-
--- Matrix.det_of_upperTriangular
-
--- define of orthogonal matrix
-def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
-  Aᵀ * A = 1
 
 
--- schur decomposition theorem
-theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
-  ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by
-  sorry
-
-theorem Orthogonal_inv {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ):
-  Orthogonal_Matrix A → A * Aᵀ= 1 := by
-  intro h
-  sorry
 open GateauxDeriv
 -- 2.13(a)
-@[simp]
-def f_aXb  (a : Fin m → ℝ) (b : Fin n → ℝ): Matrix (Fin m) (Fin n) ℝ → ℝ :=
-  fun X => dotProduct a (mulVec X b)
-
-lemma f_aXb_eq (a : Fin m → ℝ) (b : Fin n → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) :
-  f_aXb a b X = innerProductofMatrix (vecMulVec a b) X := by
-    simp [f_aXb, innerProductofMatrix, dotProduct, vecMulVec]
-    dsimp [mulVec, dotProduct]
-    apply Finset.sum_congr rfl
-    intro i _
-    rw [mul_sum]
-    apply Finset.sum_congr rfl
-    intro j _
-    ring
 
 -- 计算 a^T Xb 的导数，大致思路为容易验证导数 D 应当满足 D . V = a^T V b，取 D = a^T b ，分别验证两个等式即可
 -- 主要困难在于需要用开集的条件规约出tendsTo 内部的 t != 0，
@@ -228,9 +167,11 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
     have h9 (x : ℝ) (i : Fin n): (1 + x • R) i i ≠ 0 := by
       sorry
     simp only [dist]
-    rw [Real.log_prod]
+    intro ε
+    intro ε₁
+    sorry
+
+    -- rw [Real.log_prod]
     have ha1: trace (R) = innerProductofMatrix (X⁻¹)ᵀ V :=by
-      calc
-        trace (R) = trace (R * Q * Qᵀ ) :=by
-          rw [symm h4]
       sorry
+    sorry
