@@ -1,6 +1,7 @@
 import «Tutorial».Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 open Matrix GateauxDeriv
 open InnerProductOfMatrix
@@ -94,6 +95,7 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
           _ = innerProductofMatrix (X⁻¹)ᵀ V := by
             simp only [traceMHDotM, iProd_eq_traceDot]
             simp
+      sorry
       sorry
 
 -- 现在我们只需要证明 Σ log ( 1 + t * r i i) / t = Tr(R) + o(1)
