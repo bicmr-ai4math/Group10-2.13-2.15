@@ -5,11 +5,12 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 open Matrix GateauxDeriv
 open InnerProductOfMatrix
+open BigOperators
 noncomputable
 def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
 
-theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
+theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X.det > 0):
   HasGateauxDerivAt (f_lndet) X (X⁻¹)ᵀ := by
     simp [HasGateauxDerivAt]
     simp [f_lndet]
@@ -95,7 +96,32 @@ theorem problem_c (X : Matrix (Fin n) (Fin n) ℝ) (h : X.det > 0):
           _ = innerProductofMatrix (X⁻¹)ᵀ V := by
             simp only [traceMHDotM, iProd_eq_traceDot]
             simp
-      sorry
+      rw [← ha1]
+      have e1: trace (R) = Finset.sum Finset.univ fun i => R i i := by
+        rw [trace]
+        simp
+      rw [e1]
+      rw [Finset.sum_div]
+      rw [← Finset.sum_sub_distrib]
+      have h2 (i : Fin n) : |Real.log ((1 + x • R) i i) / x - R i i| ≤ ε / n :=
+        sorry
+      have not_equal : n ≠ 0 := by
+        linarith
+      have h3 : ∑ i : Fin n, ε / n = ε := by
+        rw [← Finset.sum_div]
+        simp
+        rw [← div_mul_eq_mul_div]
+        simp [div_self, hn, not_equal]
+      calc
+        |Finset.sum Finset.univ fun x_1 => Real.log ((1 + x • R) x_1 x_1) / x - R x_1 x_1|
+              ≤ Finset.sum Finset.univ fun x_1 => |Real.log ((1 + x • R) x_1 x_1) / x - R x_1 x_1| := by
+          apply Finset.abs_sum_le_sum_abs
+        _     < ε := by
+          rw [← h3]
+          apply Finset.sum_lt_sum
+          intro i hi
+          sorry
       sorry
 
--- 现在我们只需要证明 Σ log ( 1 + t * r i i) / t = Tr(R) + o(1)
+
+-- 现在我们只需要证明 Σ log ( 1 + t * r i i) / t = Tr(R) + o(1)  ( δ 现在取的2 )
