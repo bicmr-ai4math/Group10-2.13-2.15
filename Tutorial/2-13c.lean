@@ -25,7 +25,7 @@ lemma left_right_distrib_orthogonal {n : Nat} {x : ℝ} {Q R : Matrix (Fin n) (F
     exact symm h
 
 lemma log_delta_epsilon_of_Finset {n : Nat} (hn : 1 ≤ n) (ε : ℝ) (R : Matrix (Fin n) (Fin n) ℝ) :
-    ∃ δ > 0, (∀ i : Fin n, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R i i) / x - R i i| < ε) := by
+    ∃ δ > 0, (∀ i : Fin n, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R i i) / x - R i i| < ε) := by --不可逃避的问题
   let image_δ₃ := Finset.image
     (fun i : Fin n => 2) -- 这个地方要改成  (fun i : Fin n => Classical.choose ln_delta_epsilon ε/n (R i i))
     Finset.univ
@@ -122,8 +122,9 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h :
     rw [e1]
     rw [Finset.sum_div]
     rw [← Finset.sum_sub_distrib]
-    have h2 (i : Fin n) : |Real.log (1 + x * R i i) / x - R i i| < ε / n := -- 不可逃避的问题
-      sorry
+    have h2 (i : Fin n) : |Real.log (1 + x * R i i) / x - R i i| < ε / n := by
+      specialize hx₃_log_delta_epsilon i x
+      exact hx₃_log_delta_epsilon x_range.2
     have not_equal : n ≠ 0 := by
       linarith
     have h3 : ∑ i : Fin n, ε / n = ε := by
