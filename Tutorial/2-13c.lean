@@ -2,15 +2,17 @@ import «Tutorial».Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
+-- import Mathlib.Order.Lattice
 
 open Matrix GateauxDeriv
 open InnerProductOfMatrix
+open Classical
 open BigOperators
 noncomputable
 def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
 
-theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X.det > 0):
+theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h : X.det > 0):
   HasGateauxDerivAt (f_lndet) X (X⁻¹)ᵀ := by
     simp [HasGateauxDerivAt]
     simp [f_lndet]
@@ -30,7 +32,9 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X
     simp [h]
     have none_zero_1 : det ( X ) ≠  0 := by
       linarith [h]
-    have none_zero_2 (x : ℝ) : det ( 1 + x • (X⁻¹ * V) ) ≠  0 := by
+    have none_zero_2 (x : ℝ) : det ( 1 + x • (X⁻¹ * V) ) ≠  0 := by -- 用 basic 中引入的新theorem来证明
+      let ⟨δ₁, new1⟩  := det_notzero (X⁻¹ * V) x
+      rcases new1
       sorry
     simp [Real.log_mul, none_zero_1, none_zero_2]
     let ⟨Q, R, h3a, h3b, h3c⟩  := schur_decomposition n (X⁻¹ * V)
@@ -67,7 +71,9 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X
       apply is_upper_triangle.smul
       exact h3b
     simp only [upper_triangle_det, h8]
-    have h9 (x : ℝ) (i : Fin n): (1 + x • R) i i ≠ 0 := by
+    have h9 (x : ℝ) (i : Fin n): (1 + x • R) i i ≠ 0 := by  -- 用 basic 中引入的新theorem来证明
+      let ⟨δ₂, new2⟩  := det_notzero R x
+      rcases new2
       sorry
     simp only [dist]
     intro ε
@@ -79,7 +85,7 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X
       intro x_nonneg x_range
       rw [Real.log_prod]
       have inv_1: Q * Qᵀ  = 1 :=by
-        rw [Orthogonal_inv] -- 可以直接利用symm h4
+        rw [Orthogonal_inv]
         assumption
       have ha1: trace (R) = innerProductofMatrix (X⁻¹)ᵀ V  := by
         calc
@@ -103,7 +109,7 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X
       rw [e1]
       rw [Finset.sum_div]
       rw [← Finset.sum_sub_distrib]
-      have h2 (i : Fin n) : |Real.log ((1 + x • R) i i) / x - R i i| ≤ ε / n :=
+      have h2 (i : Fin n) : |Real.log (1 + x * R i i) / x - R i i| < ε / n := -- 不可逃避的问题
         sorry
       have not_equal : n ≠ 0 := by
         linarith
@@ -118,10 +124,12 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : n > 0) (h : X
           apply Finset.abs_sum_le_sum_abs
         _     < ε := by
           rw [← h3]
-          apply Finset.sum_lt_sum
-          intro i hi
-          sorry
-      sorry
-
-
--- 现在我们只需要证明 Σ log ( 1 + t * r i i) / t = Tr(R) + o(1)  ( δ 现在取的2 )
+          apply Finset.sum_lt_sum_of_nonempty
+          unfold Finset.Nonempty
+          sorry  -- choice & use
+          simp
+          assumption
+      specialize h9 x
+      simp at h9
+      simp
+      assumption

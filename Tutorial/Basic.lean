@@ -150,7 +150,6 @@ theorem inner_product_of_self_is_zero_infer_zero_matrix:
       innerProductofMatrix a a = 0 → a = 0 := by
   sorry
 
-
 @[default_instance]
 instance inner_product_space_of_matrix (n m : ℕ): InnerProductSpace.Core ℝ (Matrix (Fin n) (Fin m) ℝ) :=
   {
@@ -243,6 +242,16 @@ theorem upper_triangle_det {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} (h : is_up
 def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
+theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ) (x : ℝ ): -- 要合适的取 δ 来证明
+  ∃ δ > 0, |x| < δ → det (1 + x • A) ≠ 0 :=by
+  sorry
+
+theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名称后的相当于是任意的条件 (∀ n: Nat,...)
+  is_upper_triangle A → det (A) ≠ 0 → ∀ i : Fin n, A i i ≠ 0 := by
+  intro i hi
+  rw [upper_triangle_det] at hi -- 利用括号内的条件来rewrite hi
+  simp [Finset.prod_ne_zero_iff.mp hi]
+  assumption
 
 -- schur decomposition theorem
 theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
