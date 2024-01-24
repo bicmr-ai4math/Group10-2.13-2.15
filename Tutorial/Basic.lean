@@ -248,10 +248,55 @@ theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的�
   ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
   sorry
 
-theorem ln_delta_epsilon (ε R: Real): -- 要合适的取 δ 来证明
-  ∃ δ > 0, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
-  have h := Real.tendsto_mul_log_one_plus_div_atTop R
-  sorry
+theorem ln_delta_epsilon (R: Real): -- 要合适的取 δ 来证明
+  ∀ ε > 0, ∃ δ > 0, ∀ x ≠ 0, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
+  have hR := Real.tendsto_mul_log_one_plus_div_atTop R
+  have hnR := Real.tendsto_mul_log_one_plus_div_atTop (-R)
+  rw [Metric.tendsto_atTop] at hR
+  rw [Metric.tendsto_atTop] at hnR
+  simp [dist] at *
+  intro ε' hε'
+  specialize hR ε' hε'
+  specialize hnR ε' hε'
+  let ⟨N1, hN1⟩  := hR
+  let ⟨N2, hN2⟩  := hnR
+  let δ := 1 / max 1 (1 + max N1 N2)
+  have hδ : N1 < 1/δ ∧ N2 < 1/δ := by
+    constructor
+    · simp; right;
+      linarith [zero_lt_one', le_max_left N1 N2]
+    · simp; right;
+      linarith [zero_lt_one', le_max_right N1 N2]
+  use δ
+  have hpos_δ : 0 < δ := div_pos
+    (by norm_num)
+    (lt_of_lt_of_le (by norm_num) (le_max_left 1 (1 + max N1 N2)))
+  constructor
+  · exact hpos_δ
+  intro x hnx hx
+  rcases (Ne.lt_or_lt hnx) with (hxl | hxr)
+  · let y := - 1 / x
+    have hxy : x = - 1 / y := by simp [y, ← div_mul]
+    rw [hxy, div_mul_eq_mul_div, neg_one_mul, ← div_mul, div_neg, div_one]
+    rw [neg_mul, neg_sub_left, abs_neg, add_comm, mul_comm]
+    rw [abs_of_neg hxl] at hx
+    have hy : N2 ≤ y := by
+      have hpos_y: 0 < y := by apply one_div_pos.mp; simp; linarith;
+      rw [hxy, neg_div, neg_neg] at hx
+      apply (one_div_lt hpos_y hpos_δ).mp at hx
+      linarith [hx, hδ.2]
+    exact hN2 y hy
+  · let y := 1 / x
+    have hxy : x = 1 / y := by simp [y]
+    rw [mul_comm x R]
+    rw [hxy, mul_one_div, ← div_mul, div_one, mul_comm]
+    rw [abs_of_pos hxr] at hx
+    have hy : N1 ≤ y := by
+      have hpos_y: 0 < y := by apply one_div_pos.mp; linarith [hxy, hxr]
+      rw [hxy] at hx
+      apply (one_div_lt hpos_y hpos_δ).mp at hx
+      linarith [hx, hδ.1]
+    exact hN1 y hy
 
 theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名称后的相当于是任意的条件 (∀ n: Nat,...)
   is_upper_triangle A → det (A) ≠ 0 → ∀ i : Fin n, A i i ≠ 0 := by
@@ -262,7 +307,7 @@ theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名�
 
 -- schur decomposition theorem
 theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
-  ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by
+    ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by
   sorry
 
 theorem Orthogonal_inv {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ):

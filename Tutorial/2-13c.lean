@@ -11,11 +11,11 @@ noncomputable
 def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
 
-#check Classical.choose (ln_delta_epsilon 0.001 1)
-
+#check Fin.fintype 2
 lemma finn_nonempty {n : Nat} (hn : n ≥ 1): (@Finset.univ (Fin n) (Fin.fintype n)).Nonempty := by
+  have x : Fin n := ⟨0, by linarith⟩
   unfold Finset.Nonempty
-  sorry
+  exact ⟨x, by simp⟩
 
 lemma left_right_distrib_orthogonal {n : Nat} {x : ℝ} {Q R : Matrix (Fin n) (Fin n) ℝ} (h : Orthogonal_Matrix Q) :
   1 + x • (Qᵀ * R * Q) = Qᵀ * (1 + x • R) * Q := by
@@ -24,19 +24,26 @@ lemma left_right_distrib_orthogonal {n : Nat} {x : ℝ} {Q R : Matrix (Fin n) (F
     rw [Orthogonal_Matrix] at h
     exact symm h
 
-lemma log_delta_epsilon_of_Finset {n : Nat} (hn : 1 ≤ n) (ε : ℝ) (R : Matrix (Fin n) (Fin n) ℝ) :
-    ∃ δ > 0, (∀ i : Fin n, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R i i) / x - R i i| < ε) := by --不可逃避的问题
-  let image_δ₃ := Finset.image
-    (fun i : Fin n => Classical.choose (ln_delta_epsilon (ε/n) (R i i)))
-    Finset.univ
+lemma log_delta_epsilon_of_Finset {n : Nat} (hn : 1 ≤ n) (R : Matrix (Fin n) (Fin n) ℝ) :
+    ∀ ε > 0, ∃ δ > 0, ∀ x ≠ 0, |x| < δ → ∀ i : Fin n, |Real.log (1 + x * R i i) / x - R i i| < ε / n := by --不可逃避的问题
+  intro ε hε
+  have hεdivn : ε / n > 0 := by
+    apply div_pos
+    · linarith
+    simp; linarith
+  let f := (fun i : Fin n => Exists.choose (ln_delta_epsilon (R i i) (ε / n) hεdivn))
+  let f_spec := (fun i : Fin n => Exists.choose_spec (ln_delta_epsilon (R i i) (ε / n) hεdivn))
+  let image_δ₃ := Finset.image f Finset.univ
   have h_image_δ₃_nonempty : image_δ₃.Nonempty := by exact Finset.image_nonempty.mpr (finn_nonempty hn)
   let δ₃  := Finset.min' image_δ₃ h_image_δ₃_nonempty
   use δ₃
   constructor
   · simp [Finset.lt_min'_iff]
-    sorry
-  intro y w hy
-
+    intro i
+    exact (f_spec i).1
+  intro y hny hy i
+  simp [Finset.lt_min'_iff] at hy
+  exact (f_spec i).2 y hny (hy i)
 
 theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h : X.det > 0):
   HasGateauxDerivAt (f_lndet) X (X⁻¹)ᵀ := by
@@ -60,7 +67,7 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h :
     -- need to construct f(ε)
     let ⟨δ₁, hδ₁, hx₁_det_nonzero⟩  := det_notzero (X⁻¹ * V)
     let ⟨δ₂, hδ₂, hx₂_det_nonzero⟩  := det_notzero R
-    let ⟨δ₃, hδ₃, hx₃_log_delta_epsilon⟩ := log_delta_epsilon_of_Finset hn (ε/n) R
+    let ⟨δ₃, hδ₃, hx₃_log_delta_epsilon⟩ := (log_delta_epsilon_of_Finset hn R) ε ε₁
     let δ := min (min δ₁ δ₂) δ₃
     use δ
     constructor
@@ -123,12 +130,11 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h :
     rw [e1]
     rw [Finset.sum_div]
     rw [← Finset.sum_sub_distrib]
-    have h2 (i : Fin n) : |Real.log (1 + x * R i i) / x - R i i| < ε / n := by
-      specialize hx₃_log_delta_epsilon i x
-      exact hx₃_log_delta_epsilon x_range.2
+    have h2 : ∀ i : Fin n, |Real.log (1 + x * R i i) / x - R i i| < ε / n := by
+      exact hx₃_log_delta_epsilon x x_nonneg x_range.2
     have not_equal : n ≠ 0 := by
       linarith
-    have h3 : ∑ i : Fin n, ε / n = ε := by
+    have h3 : ∑ __ : Fin n, ε / n = ε := by
       rw [← Finset.sum_div]
       simp
       rw [← div_mul_eq_mul_div]
