@@ -180,7 +180,6 @@ instance inner_product_space_of_matrix (n m : ℕ): InnerProductSpace.Core ℝ (
   }
 
 @[default_instance]
-
 noncomputable
 instance norm_of_matric (n m : ℕ): NormedAddCommGroup (Matrix (Fin n) (Fin m) ℝ) := InnerProductSpace.Core.toNormedAddCommGroup
 
@@ -195,7 +194,6 @@ theorem trace_form_of_inner_product {n m : ℕ} (a b : Matrix (Fin n) (Fin m) �
   rw [this]
   simp [eq_of_pointwise_inner_product_and_trace_inner_product]
   rfl
-
 
 end InnerProductOfMatrix
 
