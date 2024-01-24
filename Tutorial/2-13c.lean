@@ -94,10 +94,7 @@ theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h :
     simp only [upper_triangle_det, h8]
     have h9 (i : Fin n): (1 + x • R) i i ≠ 0 := by  -- 用 basic 中引入的新theorem来证明
       specialize hx₂_det_nonzero x
-      rw [upper_triangle_det (h8 x)] at hx₂_det_nonzero
-      let prod_diag_nonzero := hx₂_det_nonzero x_range.1.2
-      -- apply Finset.prod_ne_zero_iff.mpr at prod_diag_nonzero
-      sorry
+      exact (upper_nonezero (1 + x • R)) (h8 x) (hx₂_det_nonzero x_range.1.2) i
     simp only [dist]
     rw [Real.log_prod]
     have inv_1: Q * Qᵀ  = 1 :=by
