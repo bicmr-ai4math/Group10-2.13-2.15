@@ -2,6 +2,7 @@ import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Reflection
 import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Algebra.BigOperators.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
 -- import Mathlib.Data.Fin.Tuple.Reflection
 -- import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Order.Filter.Basic
@@ -242,8 +243,12 @@ theorem upper_triangle_det {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} (h : is_up
 def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
-theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ) (x : ℝ ): -- 要合适的取 δ 来证明
-  ∃ δ > 0, |x| < δ → det (1 + x • A) ≠ 0 :=by
+theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的取 δ 来证明
+  ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
+  sorry
+
+theorem ln_delta_epsilon (ε R: Real): -- 要合适的取 δ 来证明
+  ∃ δ > 0, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
   sorry
 
 theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名称后的相当于是任意的条件 (∀ n: Nat,...)
