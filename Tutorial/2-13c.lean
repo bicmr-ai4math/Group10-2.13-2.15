@@ -27,14 +27,15 @@ lemma left_right_distrib_orthogonal {n : Nat} {x : ℝ} {Q R : Matrix (Fin n) (F
 lemma log_delta_epsilon_of_Finset {n : Nat} (hn : 1 ≤ n) (ε : ℝ) (R : Matrix (Fin n) (Fin n) ℝ) :
     ∃ δ > 0, (∀ i : Fin n, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R i i) / x - R i i| < ε) := by --不可逃避的问题
   let image_δ₃ := Finset.image
-    (fun i : Fin n => 2) -- 这个地方要改成  (fun i : Fin n => Classical.choose ln_delta_epsilon ε/n (R i i))
+    (fun i : Fin n => Classical.choose (ln_delta_epsilon (ε/n) (R i i)))
     Finset.univ
   have h_image_δ₃_nonempty : image_δ₃.Nonempty := by exact Finset.image_nonempty.mpr (finn_nonempty hn)
   let δ₃  := Finset.min' image_δ₃ h_image_δ₃_nonempty
   use δ₃
   constructor
   · simp [Finset.lt_min'_iff]
-  sorry
+    sorry
+  intro y w hy
 
 
 theorem problem_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : 1 ≤ n) (h : X.det > 0):

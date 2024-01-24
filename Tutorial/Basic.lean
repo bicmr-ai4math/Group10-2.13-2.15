@@ -15,6 +15,7 @@ import Mathlib.Topology.Basic
 -- import Mathlib.LinearAlgebra.FiniteDimensional
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 open BigOperators
 open Finset
 open Matrix Filter Set Topology
@@ -249,6 +250,7 @@ theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的�
 
 theorem ln_delta_epsilon (ε R: Real): -- 要合适的取 δ 来证明
   ∃ δ > 0, ∀ x : ℝ, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
+  have h := Real.tendsto_mul_log_one_plus_div_atTop R
   sorry
 
 theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名称后的相当于是任意的条件 (∀ n: Nat,...)
@@ -266,4 +268,15 @@ theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
 theorem Orthogonal_inv {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ):
   Orthogonal_Matrix A → A * Aᵀ= 1 := by
   intro h
-  sorry
+  simp [Orthogonal_Matrix] at h
+  have this: A⁻¹ = Aᵀ:= by
+    exact inv_eq_left_inv h
+  rw [← this]
+  have hh : ∃ B, B * A = 1 := by
+    use Aᵀ
+  have hhh := Matrix.vecMul_surjective_iff_exists_left_inverse.mpr hh
+  have hhhh := Matrix.vecMul_surjective_iff_isUnit.mp hhh
+  have hhhhh : Invertible A := by
+    exact Matrix.invertibleOfIsUnitDet A ((Matrix.isUnit_iff_isUnit_det A).mp hhhh)
+  simp [Matrix.mul_inv_of_invertible A] -- simple输入括号内的参数 方框内的assumption会自行寻找
+-- Matrix.mulVec_surjective_iff_exists_right_inverse
