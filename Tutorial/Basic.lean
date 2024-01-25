@@ -80,10 +80,18 @@ namespace GateauxDeriv
 -- Noticing that Grandinet in Mathlib require the space is normed
 -- but when we talk about Gateaux derivative of matrix, it seems we don't need to specify a norm of matrix
 -- so we may redefine the definition of Gateaux derivative
+def HasGateauxDerivAtDirection {m n: Nat} (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (f' : Matrix (Fin m) (Fin n) ℝ)
+  (V : Matrix (Fin m) (Fin n) ℝ)  : Prop :=
+    Filter.Tendsto (fun t : ℝ ↦ (f (X + t • V) - f X ) / t)
+      (𝓝[≠] 0) (𝓝 (innerProductofMatrix f' V))
+
 def HasGateauxDerivAt {m n: Nat} (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (f' : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∀ V : Matrix (Fin m) (Fin n) ℝ,
     Filter.Tendsto (fun t : ℝ ↦ (f (X + t • V) - f X ) / t)
       (𝓝[≠] 0) (𝓝 (innerProductofMatrix f' V))
+-- def HasGateauxDerivAt {m n: Nat} (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) (f' : Matrix (Fin m) (Fin n) ℝ) : Prop :=
+--   ∀ V : Matrix (Fin m) (Fin n) ℝ,
+--     HasGateauxDerivAtDirection f X f' V
 
 -- define f is G differentiable
 def GateauxDifferentiable {m n: Nat} (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) : Prop :=

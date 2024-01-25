@@ -7,7 +7,6 @@ import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Topology.Basic
 import Mathlib.Topology.UniformSpace.Basic
-import Mathlib.Topology.Homotopy.Basic
 open GateauxDeriv Topology Filter Set InnerProductOfMatrix
 #check     Tendsto
 
