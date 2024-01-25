@@ -298,44 +298,44 @@ def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
 theorem bounded_poly {n : Nat} (p : Polynomial ℝ ) :
-  ∃ M > 0, ∀ x : ℝ , |x| < 1 → |Polynomial.eval x p| < M :=by
-  use 2
-  constructor
-  · linarith
-  intro h ha
-  rw [Polynomial.eval_eq_sum]
-  sorry -- 只需取δ 使得每个次数项都小于 M/n即可 （需调整位置）
+  ∃ M > 0, ∀ x : ℝ , |x| < 1 → |Polynomial.eval x p| < M :=by
+  use 2
+  constructor
+  · linarith
+  intro h ha
+  rw [Polynomial.eval_eq_sum]
+  sorry -- 只需取δ 使得每个次数项都小于 M/n即可 （需调整位置）
 
 
 theorem det_limit {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ):
-  ∀ ε > 0 ,∃ δ > 0, ∀ x : ℝ, |x| < δ → |det (1 + x • A) - 1| < ε := by
-  intro a ha
-  use 1/3
-  constructor
-  · linarith
-  intro b hb
-  rw[ Matrix.det_one_add_smul]
-  let c := min a (1)
-  simp [add_sub_right_comm] -- 大部分情况还是用simp
-  have this : c ≤ a := by
-    simp [min_le_left]
-  sorry -- 只需调整位置，取 δ = min (c / 2 * max (trace A, M)) 1即可
+  ∀ ε > 0 ,∃ δ > 0, ∀ x : ℝ, |x| < δ → |det (1 + x • A) - 1| < ε := by
+  intro a ha
+  use 1/3
+  constructor
+  · linarith
+  intro b hb
+  rw[ Matrix.det_one_add_smul]
+  let c := min a (1)
+  simp [add_sub_right_comm] -- 大部分情况还是用simp
+  have this : c ≤ a := by
+    simp [min_le_left]
+  sorry -- 只需调整位置，取 δ = min (c / 2 * max (trace A, M)) 1即可
 
 
 theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的取 δ 来证明
-  ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
-  have h1: ∃ δ₁ > 0, ∀ x : ℝ, |x| < δ₁  → |det (1 + x • A) - 1| < 1 :=by
-    apply det_limit
-    linarith
-  let ⟨δ₁, h2⟩  := h1
-  use δ₁
-  constructor
-  · simp [h2]
-  rcases h2 with ⟨ha, hb⟩  -- 将and拆为两条
-  intro x hx
-  have hhh := hb x hx
-  rw [abs_lt] at hhh
-  linarith [hhh.1]
+  ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
+  have h1: ∃ δ₁ > 0, ∀ x : ℝ, |x| < δ₁ → |det (1 + x • A) - 1| < 1 :=by
+    apply det_limit
+    linarith
+  let ⟨δ₁, h2⟩ := h1
+  use δ₁
+  constructor
+  · simp [h2]
+  rcases h2 with ⟨ha, hb⟩ -- 将and拆为两条
+  intro x hx
+  have hhh := hb x hx
+  rw [abs_lt] at hhh
+  linarith [hhh.1]
 
 theorem ln_delta_epsilon (R: Real): -- 要合适的取 δ 来证明
   ∀ ε > 0, ∃ δ > 0, ∀ x ≠ 0, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by

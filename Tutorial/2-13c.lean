@@ -1,8 +1,11 @@
 import «Tutorial».Basic
+import «Tutorial».gradintToGDeriv
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Topology.Basic
 import Mathlib.Order.Filter.Basic
+import Mathlib.LinearAlgebra.Matrix.Adjugate
+
 -- import Mathlib.Order.Lattice
 
 open Matrix GateauxDeriv Topology
@@ -192,7 +195,168 @@ lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j:
   simp [add_div, hX, hx1, mul_div]
 
 
-theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : NeZero n) (hX : X.det > 0)
+-- 证明矩阵元素的投影是可微的，看起来是废话但是实际上有点麻烦，主要涉及各种求和操作问题
+lemma proj_diff {n m : ℕ} (i : Fin n) (j : Fin m) (X:  Matrix (Fin n) (Fin m) ℝ): DifferentiableAt ℝ (fun (A : Matrix (Fin n) (Fin m) ℝ) => A i j) X := by
+  let proj := fun (A : Matrix (Fin n) (Fin m) ℝ) => A i j
+  let base_matrix := Matrix_base i j
+  have : HasGradientAt proj base_matrix X := by
+    apply hasGradientAt_iff_tendsto.mpr
+    have : (fun x' => ‖x' - X‖⁻¹ * ‖proj x' - proj X - inner base_matrix (x' - X)‖) = (fun x' => 0) := by
+      funext x'
+      simp
+      apply Or.inr
+      -- 由于沟通不畅两个人各自证明了一遍......
+      --have (A: Matrix (Fin n) (Fin m) ℝ) : innerProductofMatrix base_matrix A = proj A := by
+      --  simp []
+      --  dsimp [proj, innerProductofMatrix, Matrix_base]
+      --  simp []
+      --  have :
+      --    (∑ x : Fin n, ∑ x_1 : Fin m, if x = i ∧ x_1 = j then A x x_1 else 0) =
+      --    (∑ x : Fin n, if  x = i then A x j else 0) := by
+      --      apply Finset.sum_congr rfl
+      --      intro x
+      --      simp
+      --      by_cases h : x = i
+      --      · simp [h]
+      --      · simp [h]
+      --  rw [this]
+      --  have :∀ b: Fin n , b ≠ i → (fun x => if x = i then A x j else 0) b = 0 := by
+      --    intro b h
+      --    simp [h]
+      --  let h1 := Fintype.sum_eq_single i this
+      --  simp [h1]
+      have (A: Matrix (Fin n) (Fin m) ℝ) : inner base_matrix A = proj A := by
+        simp
+        rw [real_inner_comm]
+        have : innerProductofMatrix A (Matrix_base i j) = inner A (Matrix_base i j) := by
+          rfl
+        rw [<-this]
+        apply inner_product_with_matrix_base A i j
+      rw [this]
+      simp
+    rw [this]
+    apply tendsto_const_nhds
+  exact HasGradientAt.differentiableAt this
+
+-- 发现又遇到了函数应用放进求和符号里的问题，这里写了一个通用的引理
+lemma sum_map {a_2 a_3 : Type _}{n: ℕ} [AddCommMonoid a_3] (f : Fin n → a_2 -> a_3) (s : a_2) :
+  ∑x: Fin n, (f x s) = (∑x: Fin n, f x) s := by
+    simp
+
+-- 类似的，证明取子矩阵是可微的，事实上它就是多个元素投影乘以对应基本矩阵的和，当然是可微的
+lemma proj_submatrix_diff {n : ℕ} (i : Fin (Nat.succ n)) (j : Fin (Nat.succ m)) (X : Matrix (Fin (Nat.succ n)) (Fin (Nat.succ m)) ℝ)  :
+  DifferentiableAt ℝ (fun (A : Matrix (Fin (Nat.succ n)) (Fin (Nat.succ m)) ℝ) => submatrix A (Fin.succAbove i) (Fin.succAbove j)) X := by
+    let base_matrix s t: Matrix (Fin n) (Fin m) ℝ := fun (k: Fin n) (l: Fin m) => if k = s ∧ l = t then 1 else 0
+    have : (fun A: Matrix (Fin (Nat.succ n)) (Fin (Nat.succ m)) ℝ => submatrix A (Fin.succAbove i) (Fin.succAbove j))
+            = fun A => ∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) • base_matrix k l := by
+      funext A
+      apply Matrix.ext
+      intro s t
+      --  把两次函数应用放进求和符号，不知道有没有更好的方法
+      have : (∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) • base_matrix k l) s t =
+               (∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) * (base_matrix k l s t)) := by
+          simp
+          rw [<-sum_map]
+          rw [<-sum_map]
+          apply congr_arg
+          funext k
+          rw [<-sum_map]
+          rw [<-sum_map]
+          apply congr_arg
+          funext l
+          repeat exact 1
+          simp
+          repeat exact 1
+      rw [this]
+      simp
+      have : ∀ (x: Fin n), x ≠ s -> (∑ x_1 : Fin m, if s = x ∧ t = x_1 then A (Fin.succAbove i x) (Fin.succAbove j x_1) else 0) = 0 := by
+        intro x h
+        simp [h.symm]
+      let h1 := Fintype.sum_eq_single s this
+      simp [h1]
+    rw [this]
+    apply DifferentiableAt.sum
+    intro k _
+    apply DifferentiableAt.sum
+    intro l _
+    apply DifferentiableAt.smul
+    · apply proj_diff
+    · apply differentiableAt_const
+
+
+
+--  用归纳法证明行列式可导, 思路是进行行展开并利用可导性的加法/乘法和复合
+theorem detDifferentiable  {n : Nat}  (X : Matrix (Fin n) (Fin n) ℝ)  :
+  DifferentiableAt ℝ (det : Matrix (Fin n) (Fin n) ℝ → ℝ) X := by
+    by_cases h : n = 0
+    -- n = 0 的情形使用默认值处理
+    · have : det  = fun (A: Matrix (Fin n) (Fin n) ℝ) => 1 := by
+        funext A
+        have : IsEmpty (Fin n) := by
+          rw [h]
+          exact Fin.isEmpty
+        rw [det_isEmpty]
+      rw [this]
+      simp
+    have nz: NeZero (n:ℕ) := by
+      apply neZero_iff.mpr
+      exact h
+    -- 一般情形随便取一个 i 行进行展开
+    let i: Fin n := Inhabited.default
+    have : det  = fun (A: Matrix (Fin n) (Fin n) ℝ)
+        => ∑ j : Fin n,  A i j * Matrix.adjugate A j i := by
+      funext A
+      apply det_eq_sum_mul_adjugate_row
+    rw [this]
+    -- 证明展开式每一项可导
+    have : ∀ (j : Fin n), DifferentiableAt ℝ (fun A => A i j * adjugate A j i) X := by
+      intro j
+      have :  (fun A => A i j * adjugate A j i) = (fun A => (fun x => x i j) A • (fun x => adjugate x j i) A) := by
+        funext A
+        simp
+        have (a  b:ℝ) : a * b = a • b := by
+          rfl
+        rw [this]
+      rw [this]
+      apply DifferentiableAt.smul
+      -- 投影到 i j 元素可导
+      · simp
+        apply proj_diff i j
+      · simp
+        have adjugate_diff : DifferentiableAt ℝ (fun A => adjugate A j i) X := by
+          -- 这里我们需要使用归纳法了，因此设 n = succ n1
+          cases n with
+          | zero => simp
+          | succ n1 =>
+                have : (fun (X: Matrix (Fin (Nat.succ n1)) (Fin (Nat.succ n1)) ℝ) =>
+                      adjugate X j i) = fun X => ((-1) ^ (i + j: ℕ)) * det (submatrix X (Fin.succAbove i) (Fin.succAbove j)) := by
+                  funext X
+                  apply adjugate_fin_succ_eq_det_submatrix X j i
+                rw [this]
+                apply DifferentiableAt.const_mul
+                -- 将代数余子式拆穿拆成行列式函数和投影到子矩阵函数的复合
+                apply DifferentiableAt.comp
+                ·
+                    let m1 := (submatrix X (Fin.succAbove i) (Fin.succAbove j))
+                    have : DifferentiableAt ℝ det m1 := by
+                      apply detDifferentiable m1
+                    exact this
+                · apply proj_submatrix_diff
+        apply adjugate_diff
+    apply DifferentiableAt.sum
+    intro j _
+    apply this j
+
+
+theorem differentiableOfLnDet {n: Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0) :  GateauxDifferentiable f_lndet X := by
+  apply FDerivToGDeriv
+  apply DifferentiableAt.comp
+  · simp []
+    linarith
+  · exact detDifferentiable X
+
+
+theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0)
     (h : GateauxDifferentiable f_lndet X) :
       GateauxDeriv f_lndet X h = (X⁻¹)ᵀ := by
   unfold GateauxDifferentiable at h --
@@ -221,7 +385,8 @@ theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : NeZero n) (hX : X
     simp [Matrix.ext_iff.mpr (Matrix.smul_of (det X)⁻¹ (adjugate X))]
   exact symm h1
 
-
+theorem pro_c_final {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0):
+    GateauxDeriv f_lndet X (differentiableOfLnDet X hX) = (X⁻¹)ᵀ := pro_c X hX (differentiableOfLnDet X hX)
 
 ---------------- first try ----------------
 
