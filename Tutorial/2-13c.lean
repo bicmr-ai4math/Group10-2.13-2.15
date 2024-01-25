@@ -65,11 +65,89 @@ theorem ln_tends_to (R : ℝ): Filter.Tendsto (fun t => Real.log (1 + t * R) / t
 
 theorem tendsto_uniqueness {f : ℝ → ℝ} {y z : ℝ} (h₁ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 y))
     (h₂ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 z)) : y = z := by
-  sorry
+  have : (y = z) = (¬ ¬ (y = z)) := by simp
+  rw [this]
+  intro hyz
+  simp [Metric.tendsto_nhdsWithin_nhds] at h₁
+  simp [Metric.tendsto_nhdsWithin_nhds] at h₂
+  let ε := 1/2 * |y - z|
+  have hε : ε > 0 := by
+    simp [ε]
+    intro h1
+    apply sub_eq_zero.mp at h1 -- 圆括号要加上引用的具体变量 箭头的定理用apply
+    exact absurd h1 hyz
+  specialize h₁ ε hε
+  specialize h₂ ε hε
+  let ⟨ δ₁, hδ₁, h₁⟩ := h₁
+  let ⟨ δ₂, hδ₂, h₂⟩ := h₂
+  let δ := min δ₁ δ₂
+  have hδ : δ > 0 := by
+    simp
+    exact ⟨hδ₁, hδ₂⟩
+  simp [dist] at h₁ h₂
+  have h3 : ∀ x : ℝ, x ≠ 0 → |x| < δ → |f x - y| < 2⁻¹ * |y - z| := by
+    intro x hx hxδ
+    have h_my : |x| < δ₁ :=by
+      simp at hxδ
+      exact hxδ.1
+    simp at hx
+    exact h₁ hx h_my
+  have h4 : ∀ x : ℝ, x ≠ 0 → |x| < δ → |f x - z| < 2⁻¹ * |y - z| := by
+    intro x hx hxδ
+    have h_my : |x| < δ₂ :=by
+      simp at hxδ
+      exact hxδ.2
+    exact h₂ hx h_my
+  have h5 : ∀ x : ℝ, x ≠ 0 → |x| < δ → |y - z| < |y - z| := by
+    intro x hx hxδ
+    specialize h3 x hx hxδ
+    specialize h4 x hx hxδ
+    have hh: |y - z| = |f x - z - (f x - y)| := by
+      simp
+    nth_rewrite 1 [hh]
+    calc
+      |f x - z - (f x - y)| ≤ |f x - z| + |f x - y| := by
+        exact abs_sub (f x - z) (f x - y)
+      _ < 2⁻¹ * |y - z| + |f x - y| := by
+        linarith
+      _ ≤ 2⁻¹ * |y - z| + 2⁻¹ * |y - z| := by
+        linarith [abs_nonneg (f x - y)]
+      _ = |y - z| := by
+        simp [← mul_two, mul_comm 2⁻¹ |y - z|]
+  specialize h5 (δ/2) (by linarith)
+  have hmy: |δ / 2| = δ / 2 := by
+    simp only [abs_eq_self]
+    linarith [hδ]
+  have hmm: δ / 2 < δ := by
+    linarith [hδ]
+  have := h5 (by linarith [hmy, hmm])
+  linarith [this]
+
+theorem updateColumn_twice {n m: Nat} (X : Matrix (Fin n) (Fin m) ℝ) (j : Fin m) (f₁ f₂ : Fin n → ℝ) :
+    updateColumn (updateColumn X j f₁) j f₂ = updateColumn X j f₂ := by
+  apply Matrix.ext
+  intro i' j'
+  simp [Matrix.updateColumn_apply]
+  rcases (eq_or_ne j j') with (hl | hr)
+  · simp [hl]
+  · have hh' : (j' = j) = False := by
+      simp; intro hii'; absurd hr (symm hii'); exact not_false
+    simp [hh']
 
 theorem det_of_update_row {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) {t : ℝ}:
     det (updateRow X i fun j' => if j' = j then t else 0) = t * (X.adjugate j i) := by
-  sorry
+  let X' := updateRow X i fun j' => if j' = j then t else 0
+  rw [Matrix.det_eq_sum_mul_adjugate_row X' i]
+  simp
+  left
+  unfold adjugate
+  unfold cramer
+  simp
+  unfold cramerMap
+  simp
+  simp [← Matrix.updateColumn_transpose]
+  simp [updateColumn_twice]
+
 
 #check updateRow_self
 lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) (hX : X.det > 0):
@@ -117,7 +195,7 @@ lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j:
 theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : NeZero n) (hX : X.det > 0)
     (h : GateauxDifferentiable f_lndet X) :
       GateauxDeriv f_lndet X h = (X⁻¹)ᵀ := by
-  unfold GateauxDifferentiable at h
+  unfold GateauxDifferentiable at h --
   have hh := GateauxDeriv_spec f_lndet X h
   unfold HasGateauxDerivAt at hh
   apply Matrix.ext
@@ -135,7 +213,7 @@ theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : NeZero n) (hX : X
     · exact hδt
     intro x1 x3 x2; exact (hhh x1 x2 x3)
   have hl := (Filter.tendsto_congr' this).mp hh
-  have hr := ln_tends_to (X.adjugate j i/X.det)
+  have hr := ln_tends_to (X.adjugate j i / X.det)
   have h := tendsto_uniqueness hl hr
   rw [h, ← inv_mul_eq_div]
   simp [Matrix.inv_def]

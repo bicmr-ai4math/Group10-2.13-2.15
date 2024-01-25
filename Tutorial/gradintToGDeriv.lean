@@ -1,13 +1,19 @@
 import «Tutorial».Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Reflection
+import Mathlib.Init.Function
 import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.Calculus.FDeriv.Mul
+import Std.Tactic.Basic
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Topology.Basic
+import Mathlib.LinearAlgebra.Matrix.Adjugate
 import Mathlib.Topology.UniformSpace.Basic
-open GateauxDeriv Topology Filter Set InnerProductOfMatrix
+open GateauxDeriv Topology Filter Set InnerProductOfMatrix Matrix BigOperators Tactic
 #check     Tendsto
 
 -- 实际执行总遇到了严重的问题，库中的 Gradient 推导出 UniformSpace.toTopologicalSpace 作为矩阵空间上的拓扑，但我们的推导使用库中已有的矩阵拓扑（似乎是乘积空间定义的）
@@ -108,3 +114,140 @@ theorem FDerivToGDeriv {m n : Nat}(f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : 
     let h1 := DifferentiableAt.hasGradientAt h
     let h2 := gradintToGDeriv f (gradient f X) X h1
     use gradient f X
+
+lemma proj_diff {n m : ℕ} (i : Fin n) (j : Fin m) (X:  Matrix (Fin n) (Fin m) ℝ): DifferentiableAt ℝ (fun (A : Matrix (Fin n) (Fin m) ℝ) => A i j) X := by
+  let proj := fun (A : Matrix (Fin n) (Fin m) ℝ) => A i j
+  let base_matrix: Matrix (Fin n) (Fin m) ℝ := fun (k: Fin n) (l: Fin m) => if k = i ∧ l = j then 1 else 0
+  have : HasGradientAt proj base_matrix X := by
+    apply hasGradientAt_iff_tendsto.mpr
+    have : (fun x' => ‖x' - X‖⁻¹ * ‖proj x' - proj X - inner base_matrix (x' - X)‖) = (fun x' => 0) := by
+      funext x'
+      simp
+      apply Or.inr
+      have (A: Matrix (Fin n) (Fin m) ℝ) : innerProductofMatrix base_matrix A = proj A := by
+        simp []
+        dsimp [proj, innerProductofMatrix]
+        simp []
+        have :
+          (∑ x : Fin n, ∑ x_1 : Fin m, if x = i ∧ x_1 = j then A x x_1 else 0) =
+          (∑ x : Fin n, if  x = i then A x j else 0) := by
+            apply Finset.sum_congr rfl
+            intro x
+            simp
+            by_cases h : x = i
+            · simp [h]
+            · simp [h]
+        rw [this]
+        have :∀ b: Fin n , b ≠ i → (fun x => if x = i then A x j else 0) b = 0 := by
+          intro b h
+          simp [h]
+        let h1 := Fintype.sum_eq_single i this
+        simp [h1]
+      have (A: Matrix (Fin n) (Fin m) ℝ) : inner base_matrix A = proj A := by
+        apply this
+      rw [this]
+      simp
+    rw [this]
+    apply tendsto_const_nhds
+  exact HasGradientAt.differentiableAt this
+
+lemma sum_map {a_2 a_3 : Type _}{n: ℕ} [AddCommMonoid a_3] (f : Fin n → a_2 -> a_3) (s : a_2) :
+  ∑x: Fin n, (f x s) = (∑x: Fin n, f x) s := by
+    simp
+
+lemma proj_submatrix_diff {n : ℕ} (i : Fin (Nat.succ n)) (j : Fin (Nat.succ m)) (X : Matrix (Fin (Nat.succ n)) (Fin (Nat.succ m)) ℝ)  :
+  DifferentiableAt ℝ (fun (A : Matrix (Fin (Nat.succ n)) (Fin (Nat.succ m)) ℝ) => submatrix A (Fin.succAbove i) (Fin.succAbove j)) X := by
+    let base_matrix s t: Matrix (Fin n) (Fin m) ℝ := fun (k: Fin n) (l: Fin m) => if k = s ∧ l = t then 1 else 0
+    have : (fun A: Matrix (Fin (Nat.succ n)) (Fin (Nat.succ m)) ℝ => submatrix A (Fin.succAbove i) (Fin.succAbove j))
+            = fun A => ∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) • base_matrix k l := by
+      funext A
+      apply Matrix.ext
+      intro s t
+      have : (∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) • base_matrix k l) s t =
+               (∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) * (base_matrix k l s t)) := by
+          simp
+          rw [<-sum_map]
+          rw [<-sum_map]
+          apply congr_arg
+          funext k
+          rw [<-sum_map]
+          rw [<-sum_map]
+          apply congr_arg
+          funext l
+          repeat exact 1
+          simp
+          repeat exact 1
+      rw [this]
+      simp
+      have : ∀ (x: Fin n), x ≠ s -> (∑ x_1 : Fin m, if s = x ∧ t = x_1 then A (Fin.succAbove i x) (Fin.succAbove j x_1) else 0) = 0 := by
+        intro x h
+        simp [h.symm]
+      let h1 := Fintype.sum_eq_single s this
+      simp [h1]
+    rw [this]
+    apply DifferentiableAt.sum
+    intro k _
+    apply DifferentiableAt.sum
+    intro l _
+    apply DifferentiableAt.smul
+    · apply proj_diff
+    · apply differentiableAt_const
+
+
+
+--  用归纳法证明行列式可导, 思路是进行行展开并利用可导性的加法/乘法和复合
+theorem detDifferentiable  {n : Nat}  (X : Matrix (Fin n) (Fin n) ℝ)  :
+  DifferentiableAt ℝ (det : Matrix (Fin n) (Fin n) ℝ → ℝ) X := by
+    by_cases h : n = 0
+    · have : det  = fun (A: Matrix (Fin n) (Fin n) ℝ) => 1 := by
+        funext A
+        have : IsEmpty (Fin n) := by
+          rw [h]
+          exact Fin.isEmpty
+        rw [det_isEmpty]
+      rw [this]
+      simp
+    have nz: NeZero (n:ℕ) := by
+      apply neZero_iff.mpr
+      exact h
+    let i: Fin n := Inhabited.default
+    have : det  = fun (A: Matrix (Fin n) (Fin n) ℝ)
+        => ∑ j : Fin n,  A i j * Matrix.adjugate A j i := by
+      funext A
+      apply det_eq_sum_mul_adjugate_row
+    rw [this]
+    have : ∀ (j : Fin n), DifferentiableAt ℝ (fun A => A i j * adjugate A j i) X := by
+      intro j
+      have :  (fun A => A i j * adjugate A j i) = (fun A => (fun x => x i j) A • (fun x => adjugate x j i) A) := by
+        funext A
+        simp
+        have (a  b:ℝ) : a * b = a • b := by
+          rfl
+        rw [this]
+      rw [this]
+      apply DifferentiableAt.smul
+      -- 投影可导
+      · simp
+        apply proj_diff i j
+      · simp
+        have adjugate_diff : DifferentiableAt ℝ (fun A => adjugate A j i) X := by
+          cases n with
+          | zero => simp
+          | succ n1 =>
+                have : (fun (X: Matrix (Fin (Nat.succ n1)) (Fin (Nat.succ n1)) ℝ) =>
+                      adjugate X j i) = fun X => ((-1) ^ (i + j: ℕ)) * det (submatrix X (Fin.succAbove i) (Fin.succAbove j)) := by
+                  funext X
+                  apply adjugate_fin_succ_eq_det_submatrix X j i
+                rw [this]
+                apply DifferentiableAt.const_mul
+                apply DifferentiableAt.comp
+                ·
+                    let m1 := (submatrix X (Fin.succAbove i) (Fin.succAbove j))
+                    have : DifferentiableAt ℝ det m1 := by
+                      apply detDifferentiable m1
+                    exact this
+                · apply proj_submatrix_diff
+        apply adjugate_diff
+    apply DifferentiableAt.sum
+    intro j _
+    apply this j
