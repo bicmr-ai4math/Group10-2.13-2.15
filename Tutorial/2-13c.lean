@@ -35,9 +35,13 @@ lemma finn_nonempty {n : Nat} (hn : n ≥ 1): (@Finset.univ (Fin n) (Fin.fintype
 
 -- #check (A.det⁻¹ * ((Matrix.adjugate A) i j)
 
+-- 矩阵的基 M i' j' = δᵢᵢ' δⱼⱼ'
 def Matrix_base {n m : Nat} (i : Fin n) (j : Fin m) : Matrix (Fin n) (Fin m) ℝ := of fun x y => if x = i ∧ y = j then 1 else 0
 
 #check Fintype.sum_eq_single
+
+-- 矩阵 X 和 Matrix_base i j 的内积为 X i j （证明这是个投影）
+-- 这里比较烦的地方是 ∑ i : Fin n, if ... then ... else ...，幸好有个 Fintype.sum_eq_single 可以用
 lemma inner_product_with_matrix_base {n m : Nat} (X : Matrix (Fin n) (Fin m) ℝ) (i : Fin n) (j : Fin m) :
     innerProductofMatrix X (Matrix_base i j) = X i j := by
   unfold innerProductofMatrix
@@ -62,10 +66,12 @@ lemma inner_product_with_matrix_base {n m : Nat} (X : Matrix (Fin n) (Fin m) ℝ
   have lem_2 := Fintype.sum_eq_single i hnoti
   rw [lem_2]; simp
 
+-- 证明 log (1 + t * R) / t 的极限为 R，具体证明过程见 ln_delta_epsilon (basic 里)
 theorem ln_tends_to (R : ℝ): Filter.Tendsto (fun t => Real.log (1 + t * R) / t) (𝓝[≠] 0) (𝓝 R) := by
   simp [Metric.tendsto_nhdsWithin_nhds]
   exact ln_delta_epsilon R
 
+-- 证明极限的唯一性
 theorem tendsto_uniqueness {f : ℝ → ℝ} {y z : ℝ} (h₁ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 y))
     (h₂ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 z)) : y = z := by
   have : (y = z) = (¬ ¬ (y = z)) := by simp
@@ -126,6 +132,7 @@ theorem tendsto_uniqueness {f : ℝ → ℝ} {y z : ℝ} (h₁ : Filter.Tendsto 
   have := h5 (by linarith [hmy, hmm])
   linarith [this]
 
+-- 对一个矩阵的第 j 列改两次，那么第一次对修改会被覆盖，所以等价于只改最后一次
 theorem updateColumn_twice {n m: Nat} (X : Matrix (Fin n) (Fin m) ℝ) (j : Fin m) (f₁ f₂ : Fin n → ℝ) :
     updateColumn (updateColumn X j f₁) j f₂ = updateColumn X j f₂ := by
   apply Matrix.ext
@@ -137,6 +144,8 @@ theorem updateColumn_twice {n m: Nat} (X : Matrix (Fin n) (Fin m) ℝ) (j : Fin 
       simp; intro hii'; absurd hr (symm hii'); exact not_false
     simp [hh']
 
+-- 把矩阵的第 i 行改成“除了第 j 列以外全 0”，证明它的行列式可以展开为那个非零位置的代数余子式
+-- 本来以为这个证明很头疼，库里找不到函数。这里直接对 updateRow 还有 cramer 还有 cramerMap 展开，没想到 simp 以后化简得特别简单
 theorem det_of_update_row {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) {t : ℝ}:
     det (updateRow X i fun j' => if j' = j then t else 0) = t * (X.adjugate j i) := by
   let X' := updateRow X i fun j' => if j' = j then t else 0
@@ -153,9 +162,12 @@ theorem det_of_update_row {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n
 
 
 #check updateRow_self
+-- 证明 (ln det (X + t Matrix_base i j) - ln det X) / t 在 δ 范围内就等于 log (1 + t * (X.adjugate j i / det X))
+-- 一步步慢慢证
 lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) (hX : X.det > 0):
     ∃ δ > 0, ∀ t ≠ 0, |t| < δ → (f_lndet (X + t • Matrix_base i j) - f_lndet X) / t
       = Real.log (1 + t * (X.adjugate j i / det X)) / t := by
+  -- 直接构造一个 δ，该范围内的 t 可以保证 ln 括号内 > 0
   let δ := det X / (|adjugate X j i| + 1)
   have h_pos_abs_add_one : 0 < |adjugate X j i| + 1 := by linarith [abs_nonneg (adjugate X j i)]
   have hδ_nonneg : δ > 0 := by apply div_pos; linarith; linarith;
@@ -163,6 +175,8 @@ lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j:
   constructor
   · exact hδ_nonneg
   intro t ht_nezero htleδ
+  -- 准备工作，把 X + t • Matrix_base i j 表达为 updateRow X i (X i + t • tmulirow)
+  -- 这样就可以引用行列式对行作展开的性质了 （利用了 mathlib 中的 det_updateRow_add）
   let tmulirow := (fun j' => if j' = j then t else 0)
   have hhx : X = updateRow X i (X i) := by simp
   have h1 : X + t • Matrix_base i j = updateRow X i ((X i) + tmulirow) := by
@@ -176,7 +190,10 @@ lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j:
       simp [hh']
   rw [h1]
   unfold f_lndet
+  -- 这里把行列式按行展开了，得到了等号左边 (Real.log (det X + t * adjugate X j i) - Real.log (det X)) / t
+  -- 转换为了一个只涉及实数的命题
   simp [det_updateRow_add, det_of_update_row]
+  -- 准备工作，得到一系列不等于 0 的条件为了后续的化简
   have hx1 : det X ≠ 0 := by linarith
   have hx2 : det X + t * adjugate X j i ≠ 0 := by
     rcases eq_or_ne (adjugate X j i) 0 with (heq | hne)
@@ -191,6 +208,7 @@ lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j:
           _ > |t| := by simp [mul_add] at hx3; linarith [hx3]
           _ ≥ 0 := by simp [abs_nonneg]
       linarith [hx4]
+  -- 化简 log(a/b) = log(a) - log(b), 利用了 a ≠ 0, b ≠ 0
   rw [← Real.log_div hx2 hx1]
   simp [add_div, hX, hx1, mul_div]
 
@@ -355,17 +373,21 @@ theorem differentiableOfLnDet {n: Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.
     linarith
   · exact detDifferentiable X
 
-
+-- 在已知可微的情况下，证明 ln det X 的导数是 (X⁻¹)ᵀ
 theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0)
     (h : GateauxDifferentiable f_lndet X) :
       GateauxDeriv f_lndet X h = (X⁻¹)ᵀ := by
-  unfold GateauxDifferentiable at h --
-  have hh := GateauxDeriv_spec f_lndet X h
+  -- 先假设已经有这个导数
+  unfold GateauxDifferentiable at h
+  have hh := GateauxDeriv_spec f_lndet X h -- 那么这个导数具有性质 hh
   unfold HasGateauxDerivAt at hh
+  -- 考虑第 i 行第 j 列的元素，取 Matrix_base i j，就可以得到 f' i j 的结果
   apply Matrix.ext
   intro i j
   specialize hh (Matrix_base i j)
   rw [inner_product_with_matrix_base] at hh
+  -- 证明 hh 中的函数与 Real.log (1 + t * (adjugate X j i / det X)) / t 在小邻域内相等，
+  -- 因此他们有相同的极限，hh 可以转换为求 log (1+tR)/t 函数的极限
   have ⟨δt, hδt, hhh⟩  := calculate_f_lndet_t_delta X i j hX
   have : (fun t => (f_lndet (X + t • Matrix_base i j) - f_lndet X) / t)
       =ᶠ[𝓝[≠] 0] (fun t => Real.log (1 + t * (X.adjugate j i/X.det) ) / t ) := by
@@ -376,15 +398,22 @@ theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0)
     constructor
     · exact hδt
     intro x1 x3 x2; exact (hhh x1 x2 x3)
+  -- 利用 hh 中的函数与 Log 函数在领域内相同的性质
+  -- 证明 hl : log 函数的极限为 f' i j
   have hl := (Filter.tendsto_congr' this).mp hh
+  -- 证明 hr : log (1+tR)/t 函数的极限为 R
   have hr := ln_tends_to (X.adjugate j i / X.det)
+  -- 极限的唯一性，得到 f' i j = R = X.adjugate j i / X.det
   have h := tendsto_uniqueness hl hr
   rw [h, ← inv_mul_eq_div]
+  -- 剩下的就是基本的化简
   simp [Matrix.inv_def]
   have h1 : ((det X)⁻¹ • adjugate X) j i = (det X)⁻¹ * adjugate X j i := by
     simp [Matrix.ext_iff.mpr (Matrix.smul_of (det X)⁻¹ (adjugate X))]
   exact symm h1
 
+-- problem c 的 final 版本！
+-- differentiableOfLnDet 证明了 ln det X 的可导
 theorem pro_c_final {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0):
     GateauxDeriv f_lndet X (differentiableOfLnDet X hX) = (X⁻¹)ᵀ := pro_c X hX (differentiableOfLnDet X hX)
 

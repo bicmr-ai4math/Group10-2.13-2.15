@@ -337,6 +337,8 @@ theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的�
   rw [abs_lt] at hhh
   linarith [hhh.1]
 
+-- 用 ε,δ 语言证明 log (1 + t * R) / t 的极限为 R
+-- 好在 mathlib 库里有一个 atTop 版本的证明 Real.tendsto_mul_log_one_plus_div_atTop
 theorem ln_delta_epsilon (R: Real): -- 要合适的取 δ 来证明
   ∀ ε > 0, ∃ δ > 0, ∀ x ≠ 0, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
   have hR := Real.tendsto_mul_log_one_plus_div_atTop R
