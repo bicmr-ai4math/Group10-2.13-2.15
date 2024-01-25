@@ -300,9 +300,36 @@ theorem upper_triangle_det {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} (h : is_up
 def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
+theorem det_limit {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ):
+  ∀ ε > 0 ,∃ δ > 0, ∀ x : ℝ, |x| < δ → |det (1 + x • A) - 1| < ε := by
+  intro a ha
+  use 1/3
+  constructor
+  · linarith
+  intro b hb
+  rw[ Matrix.det_one_add_smul]
+  let c := min a (1)
+  simp [add_sub_right_comm] -- 大部分情况还是用simp
+  have this : c ≤ a := by
+    simp [min_le_left]
+  have h_bounded :
+  sorry
+
+
 theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的取 δ 来证明
   ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
-  sorry
+  have h1: ∃ δ₁ > 0, ∀ x : ℝ, |x| < δ₁  → |det (1 + x • A) - 1| < 1 :=by
+    apply det_limit
+    linarith
+  let ⟨δ₁, h2⟩  := h1
+  use δ₁
+  constructor
+  · simp [h2]
+  rcases h2 with ⟨ha, hb⟩  -- 将and拆为两条
+  intro x hx
+  have hhh := hb x hx
+  rw [abs_lt] at hhh
+  linarith [hhh.1]
 
 theorem ln_delta_epsilon (R: Real): -- 要合适的取 δ 来证明
   ∀ ε > 0, ∃ δ > 0, ∀ x ≠ 0, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
@@ -363,7 +390,7 @@ theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名�
 
 -- schur decomposition theorem
 theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
-    ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by
+    ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by  -- 抱歉，这个必须要sorry，因为结论在全局意义上有些漏洞
   sorry
 
 theorem Orthogonal_inv {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ):
