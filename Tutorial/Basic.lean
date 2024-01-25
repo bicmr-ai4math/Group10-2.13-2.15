@@ -147,10 +147,63 @@ private theorem nonneg_of_inner_product_of_self_is_zero:
     intro _ _
     apply diagPosMHDotM
 
+private lemma finsum_pos {α : Type _} [Fintype α] {f : α → ℝ} (hf : ∀ i, 0 ≤ f i) (h : ∃ i, 0 < f i) :
+  0 < ∑ i, f i := by
+    let ⟨i0, hi0⟩ := h
+    let zero_f := fun _ : α => (0 : ℝ )
+    have h1 : ∀ t : α, zero_f t ≤ f t := by
+      intro t
+      simp
+      apply hf t
+    have :  ∑ t : α, zero_f t < ∑ t : α, f t := by
+      apply sum_lt_sum
+      simp
+      exact h1
+      use i0
+      simp
+      exact hi0
+    simp at this
+    exact this
+
+
 theorem inner_product_of_self_is_zero_infer_zero_matrix:
   ∀ {n m : Nat} (a : Matrix (Fin n) (Fin m) ℝ),
       innerProductofMatrix a a = 0 → a = 0 := by
-  sorry
+    intro n m a h
+    dsimp [innerProductofMatrix] at h
+    contrapose! h
+    have : ∃ i : Fin n, ∃ j : Fin m, a i j ≠ 0 := by
+      contrapose! h
+      apply @Matrix.ext
+      simp
+      exact h
+    let ⟨i, ⟨j, hij⟩⟩ := this
+    have hij' : 0 < a i j * a i j := mul_self_pos.mpr hij
+    have h1 : ∀ t : Fin m, 0 ≤ a i t * a i t := by
+      intro t
+      apply mul_self_nonneg
+    have : 0 < ∑ t : Fin m, a i t * a i t := by
+      apply finsum_pos
+      exact h1
+      use j
+    have : ∑ i : Fin n, ∑ j : Fin m, a i j * a i j > 0 := by
+      apply finsum_pos
+      intro t
+      have : 0 ≤ ∑ j : Fin m, a t j * a t j := by
+        apply Fintype.sum_nonneg
+        intro t'
+        simp
+        apply mul_self_nonneg
+      exact this
+      use i
+    simp at this
+    exact ne_of_gt this
+
+
+
+
+
+
 
 @[default_instance]
 instance inner_product_space_of_matrix (n m : ℕ): InnerProductSpace.Core ℝ (Matrix (Fin n) (Fin m) ℝ) :=
@@ -180,7 +233,6 @@ instance inner_product_space_of_matrix (n m : ℕ): InnerProductSpace.Core ℝ (
   }
 
 @[default_instance]
-
 noncomputable
 instance norm_of_matric (n m : ℕ): NormedAddCommGroup (Matrix (Fin n) (Fin m) ℝ) := InnerProductSpace.Core.toNormedAddCommGroup
 
