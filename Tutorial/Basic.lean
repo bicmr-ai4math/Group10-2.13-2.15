@@ -108,6 +108,13 @@ lemma GateauxDeriv_spec {m n: Nat} (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X :
   rw [GateauxDeriv_def]
   exact Classical.choose_spec h
 
+theorem add_directional_GDeriv {m n: Nat} (f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ) :
+  ∀ V M g h : Matrix (Fin m) (Fin n) ℝ,
+    HasGateauxDerivAtDirection f X g V → HasGateauxDerivAtDirection f X h M →
+      HasGateauxDerivAtDirection f X (g + h) (V + M) := by
+        sorry
+
+
 end GateauxDeriv
 
 
