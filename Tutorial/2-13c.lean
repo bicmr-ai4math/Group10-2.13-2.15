@@ -1,21 +1,154 @@
 import «Tutorial».Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
+import Mathlib.Topology.Basic
+import Mathlib.Order.Filter.Basic
 -- import Mathlib.Order.Lattice
 
-open Matrix GateauxDeriv
+open Matrix GateauxDeriv Topology
 open InnerProductOfMatrix
-open Classical
 open BigOperators
+
 noncomputable
 def f_lndet : Matrix (Fin n) (Fin n) ℝ → ℝ :=
   fun X => Real.log X.det
 
-#check Fin.fintype 2
+
 lemma finn_nonempty {n : Nat} (hn : n ≥ 1): (@Finset.univ (Fin n) (Fin.fintype n)).Nonempty := by
   have x : Fin n := ⟨0, by linarith⟩
   unfold Finset.Nonempty
   exact ⟨x, by simp⟩
+
+---------------- second try ----------------
+
+
+#check Matrix.det_updateRow_add
+#check Matrix.updateRow
+#check Matrix.row
+#check Matrix.row_apply -- row n → α  to  Matrix Unit n α
+#check Matrix.det_eq_sum_mul_adjugate_row
+#check Matrix.adjugate
+#check Matrix.inv_def
+
+-- #check (A.det⁻¹ * ((Matrix.adjugate A) i j)
+
+def Matrix_base {n m : Nat} (i : Fin n) (j : Fin m) : Matrix (Fin n) (Fin m) ℝ := of fun x y => if x = i ∧ y = j then 1 else 0
+
+#check Fintype.sum_eq_single
+lemma inner_product_with_matrix_base {n m : Nat} (X : Matrix (Fin n) (Fin m) ℝ) (i : Fin n) (j : Fin m) :
+    innerProductofMatrix X (Matrix_base i j) = X i j := by
+  unfold innerProductofMatrix
+  unfold Matrix_base
+  simp
+  have hnotj (x: Fin n) : ∀ x' ≠ j, (if x = i ∧ x' = j then X x x' else 0) = 0 := by
+    intro x' hx'; simp at hx'
+    have : (x' = j) = False := by simp; intro hxi; absurd hx' hxi; exact not_false
+    simp [this]
+  have lem_1 (x: Fin n) := Fintype.sum_eq_single j (hnotj x)
+  simp at lem_1
+  have :(∑ x : Fin n, ∑ x_1 : Fin m, if x = i ∧ x_1 = j then X x x_1 else 0) =
+      (∑ x : Fin n, if x = i then X x j else 0) := by
+    apply Finset.sum_congr
+    · rfl
+    simp [lem_1]
+  rw [this]
+  have hnoti : ∀ x ≠ i, (if x = i then X x j else 0) = 0 := by
+    intro x hx; simp at hx
+    have : (x = i) = False := by simp; intro hxi; absurd hx hxi; exact not_false
+    simp [this]
+  have lem_2 := Fintype.sum_eq_single i hnoti
+  rw [lem_2]; simp
+
+theorem ln_tends_to (R : ℝ): Filter.Tendsto (fun t => Real.log (1 + t * R) / t) (𝓝[≠] 0) (𝓝 R) := by
+  simp [Metric.tendsto_nhdsWithin_nhds]
+  exact ln_delta_epsilon R
+
+theorem tendsto_uniqueness {f : ℝ → ℝ} {y z : ℝ} (h₁ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 y))
+    (h₂ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 z)) : y = z := by
+  sorry
+
+theorem det_of_update_row {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) {t : ℝ}:
+    det (updateRow X i fun j' => if j' = j then t else 0) = t * (X.adjugate j i) := by
+  sorry
+
+#check updateRow_self
+lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) (hX : X.det > 0):
+    ∃ δ > 0, ∀ t ≠ 0, |t| < δ → (f_lndet (X + t • Matrix_base i j) - f_lndet X) / t
+      = Real.log (1 + t * (X.adjugate j i / det X)) / t := by
+  let δ := det X / (|adjugate X j i| + 1)
+  have h_pos_abs_add_one : 0 < |adjugate X j i| + 1 := by linarith [abs_nonneg (adjugate X j i)]
+  have hδ_nonneg : δ > 0 := by apply div_pos; linarith; linarith;
+  use δ
+  constructor
+  · exact hδ_nonneg
+  intro t ht_nezero htleδ
+  let tmulirow := (fun j' => if j' = j then t else 0)
+  have hhx : X = updateRow X i (X i) := by simp
+  have h1 : X + t • Matrix_base i j = updateRow X i ((X i) + tmulirow) := by
+    apply Matrix.ext
+    intro i' j'
+    simp [Matrix.updateRow_apply, Matrix_base]
+    rcases (eq_or_ne i i') with (hl | hr)
+    · simp [hl]
+    · have hh' : (i' = i) = False := by
+        simp; intro hii'; absurd hr (symm hii'); exact not_false
+      simp [hh']
+  rw [h1]
+  unfold f_lndet
+  simp [det_updateRow_add, det_of_update_row]
+  have hx1 : det X ≠ 0 := by linarith
+  have hx2 : det X + t * adjugate X j i ≠ 0 := by
+    rcases eq_or_ne (adjugate X j i) 0 with (heq | hne)
+    · simp [heq]; linarith
+    · simp at htleδ
+      have hx3 := (lt_div_iff h_pos_abs_add_one).mp htleδ
+      have hx4 : det X + t * adjugate X j i > 0 := by
+        calc
+          det X + t * adjugate X j i
+            ≥ det X - |t * adjugate X j i|    := by linarith [neg_abs_le (t * adjugate X j i)]
+          _ = det X - |t| * |adjugate X j i|  := by simp [abs_mul]
+          _ > |t| := by simp [mul_add] at hx3; linarith [hx3]
+          _ ≥ 0 := by simp [abs_nonneg]
+      linarith [hx4]
+  rw [← Real.log_div hx2 hx1]
+  simp [add_div, hX, hx1, mul_div]
+
+
+theorem pro_c {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hn : NeZero n) (hX : X.det > 0)
+    (h : GateauxDifferentiable f_lndet X) :
+      GateauxDeriv f_lndet X h = (X⁻¹)ᵀ := by
+  unfold GateauxDifferentiable at h
+  have hh := GateauxDeriv_spec f_lndet X h
+  unfold HasGateauxDerivAt at hh
+  apply Matrix.ext
+  intro i j
+  specialize hh (Matrix_base i j)
+  rw [inner_product_with_matrix_base] at hh
+  have ⟨δt, hδt, hhh⟩  := calculate_f_lndet_t_delta X i j hX
+  have : (fun t => (f_lndet (X + t • Matrix_base i j) - f_lndet X) / t)
+      =ᶠ[𝓝[≠] 0] (fun t => Real.log (1 + t * (X.adjugate j i/X.det) ) / t ) := by
+    apply eventuallyEq_nhdsWithin_iff.mpr
+    apply Metric.eventually_nhds_iff_ball.mpr
+    simp
+    use δt
+    constructor
+    · exact hδt
+    intro x1 x3 x2; exact (hhh x1 x2 x3)
+  have hl := (Filter.tendsto_congr' this).mp hh
+  have hr := ln_tends_to (X.adjugate j i/X.det)
+  have h := tendsto_uniqueness hl hr
+  rw [h, ← inv_mul_eq_div]
+  simp [Matrix.inv_def]
+  have h1 : ((det X)⁻¹ • adjugate X) j i = (det X)⁻¹ * adjugate X j i := by
+    simp [Matrix.ext_iff.mpr (Matrix.smul_of (det X)⁻¹ (adjugate X))]
+  exact symm h1
+
+
+
+---------------- first try ----------------
+
+#check Fin.fintype 2
+
 
 lemma left_right_distrib_orthogonal {n : Nat} {x : ℝ} {Q R : Matrix (Fin n) (Fin n) ℝ} (h : Orthogonal_Matrix Q) :
   1 + x • (Qᵀ * R * Q) = Qᵀ * (1 + x • R) * Q := by
