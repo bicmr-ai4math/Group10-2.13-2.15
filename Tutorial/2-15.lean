@@ -1,5 +1,6 @@
 import «Tutorial».Basic
 import Mathlib.Data.Matrix.Basic
+import Mathlib.LinearAlgebra.Matrix.PosDef
 
 open InnerProductOfMatrix Matrix
 theorem final_conclusion (n : Nat) (a b: Matrix (Fin n) (Fin n) ℝ ) :
