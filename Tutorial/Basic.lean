@@ -1,6 +1,7 @@
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Reflection
 import Mathlib.LinearAlgebra.Matrix.Trace
+import Mathlib.Data.Polynomial.Basic
 import Mathlib.Algebra.BigOperators.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 -- import Mathlib.Data.Fin.Tuple.Reflection
@@ -16,6 +17,7 @@ import Mathlib.Topology.Basic
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Data.Matrix.Rank
 open BigOperators
 open Finset
 open Matrix Filter Set Topology
@@ -175,21 +177,21 @@ theorem inner_product_of_self_is_zero_infer_zero_matrix:
       innerProductofMatrix a a = 0 → a = 0 := by
     intro n m a h
     dsimp [innerProductofMatrix] at h
-    contrapose! h
+    contrapose! h  -- 利用h来做反证法
     have : ∃ i : Fin n, ∃ j : Fin m, a i j ≠ 0 := by
       contrapose! h
-      apply @Matrix.ext
+      apply Matrix.ext -- 定理：矩阵相等 当且仅当 矩阵的每个分量都相等
       simp
       exact h
-    let ⟨i, ⟨j, hij⟩⟩ := this
-    have hij' : 0 < a i j * a i j := mul_self_pos.mpr hij
+    let ⟨i, ⟨j, hij⟩⟩ := this -- 把存在性的变量和结论具体的引入
+    have hij' : 0 < a i j * a i j := mul_self_pos.mpr hij -- mpr为从右到左
     have h1 : ∀ t : Fin m, 0 ≤ a i t * a i t := by
       intro t
       apply mul_self_nonneg
     have : 0 < ∑ t : Fin m, a i t * a i t := by
       apply finsum_pos
       exact h1
-      use j
+      use j -- 把存在性的变量带入
     have : ∑ i : Fin n, ∑ j : Fin m, a i j * a i j > 0 := by
       apply finsum_pos
       intro t
@@ -202,11 +204,6 @@ theorem inner_product_of_self_is_zero_infer_zero_matrix:
       use i
     simp at this
     exact ne_of_gt this
-
-
-
-
-
 
 
 @[default_instance]
@@ -300,9 +297,46 @@ theorem upper_triangle_det {n : Nat} {A : Matrix (Fin n) (Fin n) ℝ} (h : is_up
 def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
+theorem bounded_poly {n : Nat} (p : Polynomial ℝ ) :
+  ∃ M > 0, ∀ x : ℝ , |x| < 1 → |Polynomial.eval x p| < M :=by
+  use 2
+  constructor
+  · linarith
+  intro h ha
+  rw [Polynomial.eval_eq_sum]
+  sorry -- 只需取δ 使得每个次数项都小于 M/n即可 （需调整位置）
+
+
+theorem det_limit {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ):
+  ∀ ε > 0 ,∃ δ > 0, ∀ x : ℝ, |x| < δ → |det (1 + x • A) - 1| < ε := by
+  intro a ha
+  use 1/3
+  constructor
+  · linarith
+  intro b hb
+  rw[ Matrix.det_one_add_smul]
+  let c := min a (1)
+  simp [add_sub_right_comm] -- 大部分情况还是用simp
+  have this : c ≤ a := by
+    simp [min_le_left]
+  sorry -- 只需调整位置，取 δ = min (c / 2 * max (trace A, M)) 1即可
+
+
 theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的取 δ 来证明
   ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
-  sorry
+  have h1: ∃ δ₁ > 0, ∀ x : ℝ, |x| < δ₁  → |det (1 + x • A) - 1| < 1 :=by
+    apply det_limit
+    linarith
+  let ⟨δ₁, h2⟩  := h1
+  use δ₁
+  constructor
+  · simp [h2]
+  rcases h2 with ⟨ha, hb⟩  -- 将and拆为两条
+  intro x hx
+  have hhh := hb x hx
+  rw [abs_lt] at hhh
+  linarith [hhh.1]
+
 
 theorem ln_delta_epsilon (R: Real): -- 要合适的取 δ 来证明
   ∀ ε > 0, ∃ δ > 0, ∀ x ≠ 0, |x| < δ → |Real.log (1 + x * R) / x - R| < ε := by
@@ -361,7 +395,7 @@ theorem upper_nonezero {n: Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 定理名�
   simp [Finset.prod_ne_zero_iff.mp hi]
   assumption
 
--- schur decomposition theorem
+-- schur decomposition theorem () -- 定理的叙述有些漏洞，因为只能sorry了，事实上是局限于数域的问题
 theorem schur_decomposition (n: Nat) (A : Matrix (Fin n) (Fin n) ℝ) :
     ∃ U R, Orthogonal_Matrix U ∧ is_upper_triangle R ∧ A = Uᵀ * R * U := by
   sorry
