@@ -107,13 +107,13 @@ theorem tendsto_uniqueness {f : ℝ → ℝ} {y z : ℝ} (h₁ : Filter.Tendsto 
     nth_rewrite 1 [hh]
     calc
       |f x - z - (f x - y)| ≤ |f x - z| + |f x - y| := by
-        simp [abs_sub (f x - z) (f x - y)]
+        exact abs_sub (f x - z) (f x - y)
       _ < 2⁻¹ * |y - z| + |f x - y| := by
         linarith
       _ ≤ 2⁻¹ * |y - z| + 2⁻¹ * |y - z| := by
         linarith [abs_nonneg (f x - y)]
       _ = |y - z| := by
-        simp [← mul_two, mul_comm 2⁻¹  |y - z|]
+        simp [← mul_two, mul_comm 2⁻¹ |y - z|]
   specialize h5 (δ/2) (by linarith)
   have hmy: |δ / 2| = δ / 2 := by
     simp only [abs_eq_self]

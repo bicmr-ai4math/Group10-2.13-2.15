@@ -301,7 +301,7 @@ def Orthogonal_Matrix {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ) : Prop :=
   Aᵀ * A = 1
 
 theorem det_limit {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ):
-  ∀ ε > 0 ,∃ δ > 0, ∀ x : ℝ, |x| < δ → |det (1 + x • A) - 1| < ε := by
+    ∀ ε > 0 ,∃ δ > 0, ∀ x : ℝ, |x| < δ → |det (1 + x • A) - 1| < ε := by
   intro a ha
   use 1/3
   constructor
@@ -312,9 +312,9 @@ theorem det_limit {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ ):
   simp [add_sub_right_comm] -- 大部分情况还是用simp
   have this : c ≤ a := by
     simp [min_le_left]
-  have h_bounded :
+  -- have h_bounded :
+  --   sorry
   sorry
-
 
 theorem det_notzero {n : Nat} (A : Matrix (Fin n) (Fin n) ℝ): -- 要合适的取 δ 来证明
   ∃ δ > 0, ∀ x : ℝ, |x| < δ → det (1 + x • A) ≠ 0 := by
