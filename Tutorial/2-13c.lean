@@ -67,9 +67,31 @@ theorem tendsto_uniqueness {f : ℝ → ℝ} {y z : ℝ} (h₁ : Filter.Tendsto 
     (h₂ : Filter.Tendsto f (𝓝[≠] 0) (𝓝 z)) : y = z := by
   sorry
 
+theorem updateColumn_twice {n m: Nat} (X : Matrix (Fin n) (Fin m) ℝ) (j : Fin m) (f₁ f₂ : Fin n → ℝ) :
+    updateColumn (updateColumn X j f₁) j f₂ = updateColumn X j f₂ := by
+  apply Matrix.ext
+  intro i' j'
+  simp [Matrix.updateColumn_apply]
+  rcases (eq_or_ne j j') with (hl | hr)
+  · simp [hl]
+  · have hh' : (j' = j) = False := by
+      simp; intro hii'; absurd hr (symm hii'); exact not_false
+    simp [hh']
+
 theorem det_of_update_row {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) {t : ℝ}:
     det (updateRow X i fun j' => if j' = j then t else 0) = t * (X.adjugate j i) := by
-  sorry
+  let X' := updateRow X i fun j' => if j' = j then t else 0
+  rw [Matrix.det_eq_sum_mul_adjugate_row X' i]
+  simp
+  left
+  unfold adjugate
+  unfold cramer
+  simp
+  unfold cramerMap
+  simp
+  simp [← Matrix.updateColumn_transpose]
+  simp [updateColumn_twice]
+
 
 #check updateRow_self
 lemma calculate_f_lndet_t_delta {n : Nat} (X : Matrix (Fin n) (Fin n) ℝ) (i j: Fin n) (hX : X.det > 0):
