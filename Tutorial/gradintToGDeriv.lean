@@ -1,14 +1,17 @@
 import «Tutorial».Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Reflection
+import Mathlib.Init.Function
 import Mathlib.Analysis.Calculus.FDeriv.Basic
+import Mathlib.Analysis.Calculus.FDeriv.Mul
 import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Topology.MetricSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Topology.Basic
 import Mathlib.Topology.UniformSpace.Basic
-import Mathlib.Topology.Homotopy.Basic
-open GateauxDeriv Topology Filter Set InnerProductOfMatrix
+open GateauxDeriv Topology Filter Set InnerProductOfMatrix Matrix
 #check     Tendsto
 
 -- 实际执行总遇到了严重的问题，库中的 Gradient 推导出 UniformSpace.toTopologicalSpace 作为矩阵空间上的拓扑，但我们的推导使用库中已有的矩阵拓扑（似乎是乘积空间定义的）
@@ -20,7 +23,7 @@ instance matrix_topology {n m: ℕ } : TopologicalSpace (Matrix (Fin n) (Fin m) 
 
 -- 证明 F 导数的梯度存在则 G 导数存在，类似于可微的函数具有所有偏导数。
 -- 数学上并不困难，形式化中主要流程是写明极限换元的过程，但是过程确实繁琐
-theorem gradintToGDeriv {m n : Nat}(f : Matrix (Fin m) (Fin n) ℝ → ℝ) (f' X : Matrix (Fin m) (Fin n) ℝ) (x : Matrix (Fin m) (Fin n) ℝ)
+theorem gradintToGDeriv {m n : Nat}(f : Matrix (Fin m) (Fin n) ℝ → ℝ) (f' X : Matrix (Fin m) (Fin n) ℝ)
   : HasGradientAt f f' X -> HasGateauxDerivAt f X f' := by
     intro h
     let h1 :=  hasGradientAt_iff_tendsto.mp h
@@ -102,3 +105,10 @@ theorem gradintToGDeriv {m n : Nat}(f : Matrix (Fin m) (Fin n) ℝ → ℝ) (f' 
     let this' := Tendsto.add_const (inner f' V) this
     simp [] at this'
     exact this'
+-- F 导数存在则 G 导数存在
+theorem FDerivToGDeriv {m n : Nat}(f : Matrix (Fin m) (Fin n) ℝ → ℝ) (X : Matrix (Fin m) (Fin n) ℝ)
+  : DifferentiableAt ℝ f X -> GateauxDifferentiable f X := by
+    intro h
+    let h1 := DifferentiableAt.hasGradientAt h
+    let h2 := gradintToGDeriv f (gradient f X) X h1
+    use gradient f X
