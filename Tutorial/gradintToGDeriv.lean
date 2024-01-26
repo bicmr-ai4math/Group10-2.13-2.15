@@ -3,7 +3,6 @@ import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Reflection
-import Mathlib.Init.Function
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Mul
 import Mathlib.Analysis.Calculus.Gradient.Basic
@@ -53,7 +52,7 @@ theorem gradintToGDeriv {m n : Nat}(f : Matrix (Fin m) (Fin n) ℝ → ℝ) (f' 
     have f0 : sub_func 0 = X := by
       simp
     have : Tendsto sub_func (𝓝[≠] 0) (𝓝 X) := by
-      -- 有些恼火的是这里不能直接使用连续性条件，因为滤子变小了
+      -- 有些恼火的是这里不能直接使用连续性条件，因为滤子变小了，我们手动缩小滤子
       -- apply Continuous.tendsto'
       apply Tendsto.mono_left (Continuous.tendsto' cf (0: ℝ) X f0)
       show 𝓝[≠] 0 ≤ 𝓝 0

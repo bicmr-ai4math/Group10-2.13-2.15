@@ -274,17 +274,13 @@ lemma proj_submatrix_diff {n : ℕ} (i : Fin (Nat.succ n)) (j : Fin (Nat.succ m)
       have : (∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) • base_matrix k l) s t =
                (∑ k : Fin n, ∑ l : Fin m, A (Fin.succAbove i k) (Fin.succAbove j l) * (base_matrix k l s t)) := by
           simp
-          rw [<-sum_map]
-          rw [<-sum_map]
+          repeat rw [<-sum_map]
           apply congr_arg
           funext k
-          rw [<-sum_map]
-          rw [<-sum_map]
+          repeat rw [<-sum_map]
           apply congr_arg
           funext l
-          repeat exact 1
           simp
-          repeat exact 1
       rw [this]
       simp
       have : ∀ (x: Fin n), x ≠ s -> (∑ x_1 : Fin m, if s = x ∧ t = x_1 then A (Fin.succAbove i x) (Fin.succAbove j x_1) else 0) = 0 := by
@@ -331,9 +327,9 @@ theorem detDifferentiable  {n : Nat}  (X : Matrix (Fin n) (Fin n) ℝ)  :
       intro j
       have :  (fun A => A i j * adjugate A j i) = (fun A => (fun x => x i j) A • (fun x => adjugate x j i) A) := by
         funext A
-        simp
         have (a  b:ℝ) : a * b = a • b := by
           rfl
+        simp [this]
         rw [this]
       rw [this]
       apply DifferentiableAt.smul
@@ -365,7 +361,7 @@ theorem detDifferentiable  {n : Nat}  (X : Matrix (Fin n) (Fin n) ℝ)  :
     intro j _
     apply this j
 
-
+-- 利用 F 导数的复合证明 ln (det (A)) 是 F 可导函数，进而 G 可导
 theorem differentiableOfLnDet {n: Nat} (X : Matrix (Fin n) (Fin n) ℝ) (hX : X.det > 0) :  GateauxDifferentiable f_lndet X := by
   apply FDerivToGDeriv
   apply DifferentiableAt.comp
